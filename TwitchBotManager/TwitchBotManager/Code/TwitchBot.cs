@@ -57,7 +57,7 @@ namespace TwitchBotManager.Code {
 
 		public static string AboutText => "This is ScoredBot, to use !SR," +
 						" insert a link or a command. For example type !SR help for a list of all commands." +
-						" ScoredBot, created and maintained by ScoredOne. Download currently Unavailable.";
+						" ScoredBot, created and maintained by ScoredOne. Download: https://github.com/ScoredOne/ScoredBot-Repository";
 
 		public string[] SongRequestCommands = new string[] {
 			"song",
