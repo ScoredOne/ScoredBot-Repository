@@ -1,0 +1,40 @@
+﻿///////////// Version 0.1 : First Git Public Download ///////////////////////////////////////////////////////////////////////////////////////////
+
+- Base winforms bot content and functionality to connect to twitch chat.
+- Song Request system added as first and possibly largest addition to bot.
+	# Includes:
+	- Request tracking youtube links from twitch chat.
+	- Secondary song request list and manager.
+	- Mass loading of stored song information.
+	- Functionality to catch removed youtube songs and keep them in a seperate list for review.
+	- Video player.
+	- winforms layouts and functionality.
+- Debug tab displaying all caught actions.
+- Twitch login form.
+- Support to log into a targeted account. (untested)
+
+## Version 0.2 Plans ##
+- Version checker with the git version 
+	- small label indicating a newer version is available 
+	- git link added to about.
+- Bot chat interactions tab.
+	- Bot message toggleable/customisable messages.
+	- Small Custom commands.
+	- Song request song length limit.
+- Live chat tab
+	- Filter by user type (MOD, VIP ext).
+	- User history. (current + past sessions)
+	- Moderation capabilities.
+	- Post to chat from bot.
+- TwitchBot.cs refactors.
+	- Clean up Client_OnMessageReceived.
+	- Assesed if SongRequestCommandType is even needed.
+	- Clean up unused segments.
+
+## Future Versions Plans ##
+- Twitch API interactions running.
+- Bot operable from both chat and twitch wispers.
+- Song Requests have a audio only option to reduce download and system requirements. (libvlc is currently taking up over 300MB of the project, ~150 for both x86 and x64)
+- Download and store song requests to save bandwidth.
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
