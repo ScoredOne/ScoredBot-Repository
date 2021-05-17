@@ -22,6 +22,9 @@ using TwitchBotManager.Code.Classes;
 
 using Timer = System.Windows.Forms.Timer; // System.Threading; conflict
 
+//LibVLC.Windows.Light
+//https://t.co/nrXDbX722c?amp=1
+
 namespace TwitchBotManager {
 
 	public partial class MainForm : Form {
@@ -31,6 +34,7 @@ namespace TwitchBotManager {
 		private Timer UpdateTimer;
 
 		private bool Initialized;
+		private bool AppWorking;
 		private bool SecSongListInitalized;
 
 		private TwitchBot twitchBot;
@@ -43,7 +47,6 @@ namespace TwitchBotManager {
 		public Media media;
 
 		public bool isFullscreen = false;
-		public bool isPlaying = false;
 		public bool isSkipping = false;
 		public Size oldVideoSize;
 		public Size oldFormSize;
@@ -168,7 +171,7 @@ namespace TwitchBotManager {
 				SongSystemButton.Enabled = twitchBot.IsActive;
 				RequestsButton.Enabled = twitchBot.IsActive;
 			} else {
-				BotStartStop.Enabled = !(string.IsNullOrEmpty(TwitchBotLoginDetails.UserName) || string.IsNullOrEmpty(TwitchBotLoginDetails.OAuth));
+				BotStartStop.Enabled = !AppWorking && !(string.IsNullOrEmpty(TwitchBotLoginDetails.UserName) || string.IsNullOrEmpty(TwitchBotLoginDetails.OAuth));
 
 				ConnectionLabel.Text = "Disconnected";
 				ConnectionLabel.ForeColor = Color.Red;
@@ -213,6 +216,7 @@ namespace TwitchBotManager {
 			RequestsButton.Text = TakingSongRequests ? "Requests ON" : "Requests OFF";
 
 			RetryAllBrokenSongButton.Enabled = BrokenLinklist.Count > 0;
+
 		}
 
 		private void MainForm_FormClosing(object sender, FormClosingEventArgs e) {
@@ -625,6 +629,7 @@ namespace TwitchBotManager {
 		}
 
 		private void LoadSecondaryPlaylist() {
+			AppWorking = true;
 			SecSongListInitalized = false;
 			MainProgressBar.Value = 0;
 
@@ -668,6 +673,7 @@ namespace TwitchBotManager {
 					}
 					PostToDebug.Invoke("Secondary Playlist Loaded. All Threads Completed.");
 					SecSongListInitalized = true;
+					AppWorking = false;
 					UpdateSecPlaylistTabLists();
 
 					MainProgressBar.ThreadSafeAction(f => f.Value = 0);
