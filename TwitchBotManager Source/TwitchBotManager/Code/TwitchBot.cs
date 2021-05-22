@@ -122,6 +122,8 @@ namespace TwitchBotManager.Code {
 		public event EventHandler<BotCommandContainer> OnPauseSongRequests;
 		public event EventHandler<BotCommandContainer> OnClearSongRequests;
 
+		public event EventHandler<OnConnectionErrorArgs> OnConnectionError;
+
 		public bool IsConnected => client.IsConnected;
 
 		public bool IsActive { get; private set; } = false;
@@ -196,16 +198,23 @@ namespace TwitchBotManager.Code {
 			}
 		}
 
+		public void ReconnectToChat() {
+			if (client.IsConnected && IsActive) {
+				client.Reconnect();
+			}
+		}
+
 		private void Client_OnLog(object sender, OnLogArgs e) {
 			Console.WriteLine($"{e.DateTime}: {e.BotUsername} - {e.Data}");
 		}
 
 		private void Client_OnConnected(object sender, OnConnectedArgs e) {
+			IsActive = true;
 			Console.WriteLine($"Connected to {e.AutoJoinChannel}");
 		}
 
 		private void Client_OnReconnected(object sender, OnReconnectedEventArgs e) {
-
+			IsActive = true;
 		}
 
 		private void Client_OnJoinedChannel(object sender, OnJoinedChannelArgs e) {
@@ -298,14 +307,14 @@ namespace TwitchBotManager.Code {
 			}
 		}
 
-		public void ReceiveSongRequest(string user, string commandlink) {
-			(string link, NameValueCollection SongData) RegexData = GlobalFunctions.RegexYouTubeLink(commandlink);
+		public async void ReceiveSongRequest(string user, string commandlink) {
+			(string link, NameValueCollection SongData) = await GlobalFunctions.RegexYouTubeLink(commandlink);
 
-			if (!string.IsNullOrEmpty(RegexData.link)) {
-				if (RegexData.SongData == null) {
-					OnAddSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.AddSong, user, RegexData.link));
+			if (!string.IsNullOrEmpty(link)) {
+				if (SongData == null) {
+					OnAddSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.AddSong, user, link));
 				} else {
-					OnAddSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.AddSong, user, RegexData.link, RegexData.SongData));
+					OnAddSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.AddSong, user, link, SongData));
 				}
 			} else {
 				client.SendMessage(TwitchUsername, user + " Your link wasn't recognised, please use links from YouTube.com to add song requests.");
@@ -360,8 +369,8 @@ namespace TwitchBotManager.Code {
 		}
 
 		private void Client_OnConnectionError(object sender, OnConnectionErrorArgs e) {
-			IsActive = false;
-			MessageBox.Show("The bot failed to connect to Twitch, please check your login details and try again.","Connection Failed",MessageBoxButtons.OK, MessageBoxIcon.Error);
+			OnConnectionError.Invoke(sender, e);
+			MessageBox.Show("A connection error has occured, please check your login details and try again.","Connection Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
 		}
 
 		private void Client_OnChatCleared(object sender, OnChatClearedArgs e) {

@@ -1,16 +1,25 @@
 ﻿using System;
 using System.Collections.Specialized;
 using System.IO;
-using System.Net;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Web;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
-using Newtonsoft.Json.Linq;
+using YoutubeDLSharp;
+using YoutubeDLSharp.Metadata;
 
 namespace TwitchBotManager.Code.Classes {
 	public static class GlobalFunctions {
+
+		private readonly static YoutubeDL YoutubeDLWorker;
+
+		static GlobalFunctions() {
+			// TODO : add optional file path instillation - Disable related functionality if error
+			YoutubeDLWorker = new YoutubeDL(100) { // Python restricted
+				YoutubeDLPath = Directory.GetCurrentDirectory() + @"\youtube-dl\youtube-dl.exe",
+				FFmpegPath = Directory.GetCurrentDirectory() + @"\ffmpeg\ffmpeg.exe"
+			};
+		}
 
 		public static void CheckAndCreateOutputDirectoryFiles() {
 			Directory.CreateDirectory(Directory.GetCurrentDirectory() + @"\Outputs");
@@ -95,7 +104,7 @@ namespace TwitchBotManager.Code.Classes {
 			}
 		}
 
-		public static (string Link, NameValueCollection Details) RegexYouTubeLink(string link) {
+		public async static Task<(string Link, NameValueCollection Details)> RegexYouTubeLink(string link) {
 			link = link.Split('&')[0];
 			if (!link.Contains("https://")) {
 				link = "https://" + link;
@@ -106,31 +115,34 @@ namespace TwitchBotManager.Code.Classes {
 
 				string youtubeMatch = Regexmatch.Groups[1].Value;
 
-				//https://www.newtonsoft.com/json/help/html/SelectToken.htm
+				RunResult<VideoData> Youtubedata = await YoutubeDLWorker.RunVideoDataFetch("https://www.youtube.com/watch?v=" + youtubeMatch
+					, overrideOptions: new YoutubeDLSharp.Options.OptionSet() {
+						DumpJson = true,
+						DumpSingleJson = true,
+						HlsPreferNative = true,
+						IgnoreConfig = true,
+						NoPlaylist = true,
+						SkipDownload = true,
+						GetThumbnail = false,
+						ListThumbnails = false,
+						WriteAllThumbnails = false,
+						WriteThumbnail = false
+					});
 
-				HttpWebResponse webReponse;
-				NameValueCollection query;
 				NameValueCollection valueCollection = null;
-
-				int attemptcount = 0;
-				do {
-					try {
-						// Creating a new request each time seems to fix 404's when using this request, adding " html5=1& " fixes error as well but is significantly slower due to larger download
-						webReponse = (HttpWebResponse)WebRequest.Create("https://www.youtube.com/get_video_info?video_id=" + youtubeMatch + "&hl=en").GetResponse();
-					} catch {
-						webReponse = null;
-						attemptcount++;
-					}
-				} while (webReponse == null && attemptcount < 10);
-
-				if (webReponse != null) {
-					query = HttpUtility.ParseQueryString(HttpUtility.HtmlDecode(new StreamReader(webReponse.GetResponseStream(), Encoding.GetEncoding("utf-8")).ReadToEnd()));
-
-					JObject jsonTextReader = JObject.Parse(query["player_response"]);
+				if (Youtubedata != null && Youtubedata.Success) {
 					valueCollection = new NameValueCollection {
-						{ "title", (string)jsonTextReader.SelectToken("videoDetails.title") },
-						{ "lengthSeconds", (string)jsonTextReader.SelectToken("videoDetails.lengthSeconds") }
+						{ "title", Youtubedata.Data.Title },
+						{ "lengthSeconds", Youtubedata.Data.Duration.ToString() }
 					};
+				} else {
+					if (Youtubedata == null) {
+						Console.WriteLine("https://www.youtube.com/watch?v=" + youtubeMatch + " Crashed Out");
+					} else {
+						foreach (string error in Youtubedata.ErrorOutput) {
+							Console.WriteLine(error);
+						}
+					}
 				}
 
 				return (link, valueCollection);

@@ -1,4 +1,21 @@
-﻿///////////// Version 0.1 : First Git Public Download ///////////////////////////////////////////////////////////////////////////////////////////
+﻿
+///////////// Version 0.2 : get_video_info Nightmare... ///////////////////////////////////////////////////////
+
+So "https://www.youtube.com/get_video_info?video_id=" went offline for good suddenly it seems, the whole backbone of the song system...
+Because of the major changes to the system I might as well make this v0.2 even though no new features were added.
+The new system implements youtube-dl which requires FFMPEG, both files are included in the project for the time being.
+Features listed as plans for v0.2 are now the plans for v0.3 once issues with the new system have been ironed out.
+On a positive side, this new system allows for Audio only downloads, so that system is coming much sooner than previously thought.
+
+Important notes however:
+- 86x support has been removed due to FFMPEG version limitations.
+- Currently for the song loader, some songs are going missing when being added to the lists, so writing the updated info to the song file has been removed
+to prevent saved songs being lost.
+- Size of the download song request has not been measured against the old system, please take care with downloads.
+- Currently due to get_video_info going down youtube-dl has posted that age restricted content currently doesnt work. 
+(There are work arounds but we might as well see if they can fix it soon anyway)
+
+///////////// Version 0.1 : First Git Public Download ///////////////////////////////////////////////////////////////////////////////////////////
 
 - Base winforms bot content and functionality to connect to twitch chat.
 - Song Request system added as first and possibly largest addition to bot.
