@@ -856,7 +856,7 @@ namespace TwitchBotManager {
 					e.Items.Clear();
 					List<string> songdataString = new List<string>();
 					for (int x = 0; x < SecondarySonglist.Count; x++) {
-						songdataString.Add(x + ". " + SecondarySonglist[x].SongData.ToString());
+						songdataString.Add((x + 1).ToString() + ". " + SecondarySonglist[x].SongData.ToString());
 					}
 
 					try { // Can be null for some unknown reason sometimes so this stops unexpected exceptions
@@ -868,7 +868,7 @@ namespace TwitchBotManager {
 					e.Items.Clear();
 					List<string> songdataString = new List<string>();
 					for (int x = 0; x < BrokenLinklist.Count; x++) {
-						songdataString.Add(x + ". " + BrokenLinklist[x].ToString());
+						songdataString.Add((x + 1).ToString() + ". " + BrokenLinklist[x].ToString());
 					}
 
 					try { // Can be null for some unknown reason sometimes so this stops unexpected exceptions
@@ -912,7 +912,6 @@ namespace TwitchBotManager {
 						UpdateSecPlaylistTabLists();
 						WriteSongListsToFile();
 					});
-					task.Start();
 				}
 			} else {
 				MessageBox.Show("Link does not appear to be a YouTube link, please check link and try again.", "Invalid Input", MessageBoxButtons.OK, MessageBoxIcon.Error);
