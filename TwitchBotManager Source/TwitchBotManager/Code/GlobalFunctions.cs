@@ -139,9 +139,14 @@ namespace TwitchBotManager.Code.Classes {
 					if (Youtubedata == null) {
 						Console.WriteLine("https://www.youtube.com/watch?v=" + youtubeMatch + " Crashed Out");
 					} else {
+						string errors = "";
 						foreach (string error in Youtubedata.ErrorOutput) {
+							errors += error + " :: ";
 							Console.WriteLine(error);
 						}
+						valueCollection = new NameValueCollection {
+							{ "errors", errors }
+						};
 					}
 				}
 

@@ -69,6 +69,12 @@ namespace TwitchBotManager {
 		public SongOutputText SongOutputText = new SongOutputText();
 
 		private LinkedList<string> DebugListOut = new LinkedList<string>();
+
+		private static LinkedList<string> StaticDebugOutQueue = new LinkedList<string>();
+		public static void StaticPostToDebug(string value) {
+			StaticDebugOutQueue.AddFirst(value);
+		}
+
 		public Action<string> PostToDebug => e => {
 			if (DebugConsoleList != null && Initialized) {
 				DebugListOut.AddFirst(DateTime.Now.ToString("yyyy-MM-dd / HH-mm-ss") + " :: " + e);
@@ -215,6 +221,12 @@ namespace TwitchBotManager {
 			RequestsButton.Text = TakingSongRequests ? "Requests ON" : "Requests OFF";
 
 			RetryAllBrokenSongButton.Enabled = BrokenLinklist.Count > 0;
+
+			if (StaticDebugOutQueue.Count > 0) {
+				List<string> outList = new List<string>(StaticDebugOutQueue);
+				StaticDebugOutQueue.Clear();
+				outList.ForEach(x => PostToDebug.Invoke(x));
+			}
 
 			//if (!_mp.IsPlaying && SongRequestsPlaying && !SongRequestsTransitioning) {
 			//	PlayMedia();
@@ -721,6 +733,9 @@ namespace TwitchBotManager {
 					SecondarySonglist.Add((data, false));
 
 					PostToDebug.Invoke("Secondary Playlist Song Loaded... " + Details["title"]);
+				} else if (Details["errors"] != null) {
+					BrokenLinklist.Add(song);
+					PostToDebug.Invoke("Secondary Playlist Song Failed... " + Link + " :: " + Details["errors"]);
 				}
 			} else {
 				BrokenLinklist.Add(song);

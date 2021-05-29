@@ -310,11 +310,11 @@ namespace TwitchBotManager.Code {
 		public async void ReceiveSongRequest(string user, string commandlink) {
 			(string link, NameValueCollection SongData) = await GlobalFunctions.RegexYouTubeLink(commandlink);
 
-			if (!string.IsNullOrEmpty(link)) {
-				if (SongData == null) {
-					OnAddSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.AddSong, user, link));
-				} else {
+			if (!string.IsNullOrEmpty(link) && SongData != null) {
+				if (SongData["errors"] == null) {
 					OnAddSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.AddSong, user, link, SongData));
+				} else {
+					MainForm.StaticPostToDebug("Song request failed... " + link + " :: " + SongData["errors"]);
 				}
 			} else {
 				client.SendMessage(TwitchUsername, user + " Your link wasn't recognised, please use links from YouTube.com to add song requests.");
