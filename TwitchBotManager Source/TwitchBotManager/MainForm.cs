@@ -192,9 +192,9 @@ namespace TwitchBotManager {
 				RequestsButton.Enabled = true;
 
 				if (string.IsNullOrEmpty(SongOutputText.OutputString)) {
-					CurrentSongRequestLabel.ThreadSafeAction(e => e.Text = SongOutputText.InputString = "Song Requests Off");
+					CurrentSongRequestLabel.ThreadSafeAction(x => x.Text = SongOutputText.InputString = "Song Requests Off");
 				} else {
-					CurrentSongRequestLabel.ThreadSafeAction(e => e.Text = SongOutputText.OutputString);
+					CurrentSongRequestLabel.ThreadSafeAction(x => x.Text = SongOutputText.OutputString);
 				}
 			} else {
 				PlayPauseButton.Enabled = false;
@@ -623,9 +623,9 @@ namespace TwitchBotManager {
 				SecondarySonglist[randomNumber] = (SecondarySonglist[randomNumber].SongData, true);
 			}
 
-			SaveLinkButton.ThreadSafeAction(e => {
-				e.Enabled = !SecondarySonglist.Any(x => x.SongData.Link.Equals(CurrentSong.Link));
-				RemoveSongFromSecondaryButton.ThreadSafeAction(new Action<Control>(e => e.Enabled = !SaveLinkButton.Enabled)); // Ensures previous line was executed before working on this thread
+			SaveLinkButton.ThreadSafeAction(x => {
+				x.Enabled = !SecondarySonglist.Any(z => z.SongData.Link.Equals(CurrentSong.Link));
+				RemoveSongFromSecondaryButton.ThreadSafeAction(new Action<Control>(z => z.Enabled = !SaveLinkButton.Enabled)); // Ensures previous line was executed before working on this thread
 			});
 
 			// Output song details
@@ -677,31 +677,28 @@ namespace TwitchBotManager {
 			if (songRequestDatas.Count > 0) {
 				PostToDebug.Invoke("Secondary Playlist Loading with " + songRequestDatas.Count + " Songs.");
 
-				Task.Factory.StartNew(() => {
-					List<Thread> TaskList = new List<Thread>();
-					for (int x = 0; x < songRequestDatas.Count; x++) {
-						int index = x;
-						Thread thread = null;
-						thread = new Thread(() => GetYouTubeWebData(songRequestDatas[index]).Wait()) { IsBackground = true }; // Async ends the Thread
-						TaskList.Add(thread);
-					}
-					TaskList.ForEach(e => e.Start());
+				Dictionary<SongRequestData, bool> CompletionList = new Dictionary<SongRequestData, bool>();
+				songRequestDatas.ForEach(x => CompletionList.Add(x, false));
+				List<Task> tasks = new List<Task> {
+					Task.Run(() => {
+						while (CompletionList.Values.Any(x => x == false)) {
+							double value = Math.Round((CompletionList.TakeWhile(z => z.Value).Count() / CompletionList.Count) * 100d);
 
-					while (TaskList.Any(e => e.IsAlive)) {
-						MainProgressBar.ThreadSafeAction(f => f.Value = (int)Math.Round((TaskList.TakeWhile(e => !e.IsAlive).Count() / TaskList.Count) * 100d));
-					}
+							MainProgressBar.ThreadSafeAction(x => x.Value = (int)value);
+						}
 
-					PostToDebug.Invoke("Secondary Playlist Loaded. All Threads Completed. [" + SecondarySonglist.Count + " Successful] - [" + BrokenLinklist.Count + " Failed]");
-					SecSongListInitalized = true;
-					AppWorking = false;
-					UpdateSecPlaylistTabLists();
+						PostToDebug.Invoke("Secondary Playlist Loaded. All Threads Completed. [" + SecondarySonglist.Count + " Successful] - [" + BrokenLinklist.Count + " Failed]");
+						SecSongListInitalized = true;
+						AppWorking = false;
+						UpdateSecPlaylistTabLists();
 
-					MainProgressBar.ThreadSafeAction(f => f.Value = 0);
+						MainProgressBar.ThreadSafeAction(x => x.Value = 0);
 
-					// Songs are getting lost before being added to a list (Reason Unknown), currently commented out to save songs
-					// TODO : Change to write updated data to song list as an option, not on completion. Also to write it to new file and archive old.
-					//WriteSongListsToFile(); // Write the updated details to the file
-				});
+					})
+				};
+
+				tasks.AddRange(songRequestDatas.Select(x => GetYouTubeWebData(x).ContinueWith(t => { CompletionList[x] = true; })));
+				Task.WhenAll(tasks);
 
 			} else {
 				SecSongListInitalized = true;
@@ -710,14 +707,18 @@ namespace TwitchBotManager {
 			}
 		}
 
-		public async Task GetYouTubeWebData(SongRequestData song) {
+		public async Task<SongRequestData> GetYouTubeWebData(SongRequestData song) {
 			(string Link, NameValueCollection Details) = await GlobalFunctions.RegexYouTubeLink(song.Link);
+
+			SongRequestData data = null;
 
 			if (!string.IsNullOrEmpty(Link) && Details != null) {
 				if (Details["title"] != null && Details["lengthSeconds"] != null) {
 					int songlength = int.Parse(Details["lengthSeconds"]);
 
-					SecondarySonglist.Add((new SongRequestData(Link, song.Requester, Details["title"], songlength), false));
+					data = new SongRequestData(Link, song.Requester, Details["title"], songlength);
+
+					SecondarySonglist.Add((data, false));
 
 					PostToDebug.Invoke("Secondary Playlist Song Loaded... " + Details["title"]);
 				}
@@ -725,18 +726,25 @@ namespace TwitchBotManager {
 				BrokenLinklist.Add(song);
 				PostToDebug.Invoke("Secondary Playlist Song Failed... " + Link);
 			}
+
+			return data;
 		}
 
 		public void WriteSongListsToFile() {
 			List<string> refreshedList = new List<string>();
-			SecondarySonglist.ForEach(e => {
-				refreshedList.Add(JsonConvert.SerializeObject(e.SongData));
+			SecondarySonglist.ForEach(x => {
+				refreshedList.Add(JsonConvert.SerializeObject(x.SongData));
 			});
-			BrokenLinklist.ForEach(e => {
-				refreshedList.Add(JsonConvert.SerializeObject(e));
+			BrokenLinklist.ForEach(x => {
+				refreshedList.Add(JsonConvert.SerializeObject(x));
 			});
 			refreshedList.Add(Environment.NewLine);
 			File.WriteAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt", refreshedList);
+			PostToDebug.Invoke("Secondary Song List successfully updated");
+		}
+
+		public void WriteSingleSongToFile(SongRequestData song) {
+			File.AppendAllText(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt", JsonConvert.SerializeObject(song));
 			PostToDebug.Invoke("Secondary Song List successfully updated");
 		}
 
@@ -832,7 +840,7 @@ namespace TwitchBotManager {
 			if (CurrentSong != null) {
 				if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt")) {
 					List<string> songs = File.ReadAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt").ToList();
-					songs.RemoveAll(e => e.Contains(CurrentSong.Link));
+					songs.RemoveAll(x => x.Contains(CurrentSong.Link));
 					File.WriteAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt", songs);
 					PostToDebug.Invoke(CurrentSong.Title + " Removed from Secondary Playlist.");
 
@@ -906,25 +914,29 @@ namespace TwitchBotManager {
 				if (SecondarySonglist.Any(x => x.SongData.Link.Contains(match.Value)) || BrokenLinklist.Any(x => x.Link.Contains(match.Value))) {
 					MessageBox.Show("Link appears to be already found in the secondary requests.", "Song Already Added", MessageBoxButtons.OK, MessageBoxIcon.Information);
 				} else {
-					Task task = GetYouTubeWebData(new SongRequestData(link, requester));
-					task.ContinueWith((e) => {
-						PostToDebug.Invoke(link + " Link added to Secondary Song Requests.");
-						UpdateSecPlaylistTabLists();
-						WriteSongListsToFile();
+					Task<SongRequestData> task = GetYouTubeWebData(new SongRequestData(link, requester));
+					task.ContinueWith(x => {
+						if (x.Result == null) {
+							PostToDebug.Invoke(link + " Link failed to add to Secondary Song Requests.");
+						} else {
+							PostToDebug.Invoke(link + " Link added to Secondary Song Requests.");
+							UpdateSecPlaylistTabLists();
+							WriteSingleSongToFile(x.Result);
+						}
 					});
 				}
 			} else {
 				MessageBox.Show("Link does not appear to be a YouTube link, please check link and try again.", "Invalid Input", MessageBoxButtons.OK, MessageBoxIcon.Error);
 			}
 
-			GlobalFunctions.ExecuteMultipleThreadSafeActions(e => e.Enabled = false, RemoveBrokenSongButton, RetryBrokenSongButton, AddSecondarySongButton, RemoveSecondarySongButton, ClaimSongButton);
+			GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = false, RemoveBrokenSongButton, RetryBrokenSongButton, AddSecondarySongButton, RemoveSecondarySongButton, ClaimSongButton);
 		}
 
 		private void RemoveBrokenSongButton_Click(object sender, EventArgs e) {
 			if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt")) {
 				List<string> songs = File.ReadAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt").ToList();
 
-				songs.RemoveAll(e => e.Contains(BrokenLinklist[BrokenSongsListBox.SelectedIndex].Link)); // Link persists compared to data changes
+				songs.RemoveAll(x => x.Contains(BrokenLinklist[BrokenSongsListBox.SelectedIndex].Link)); // Link persists compared to data changes
 
 				File.WriteAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt", songs);
 
@@ -933,74 +945,70 @@ namespace TwitchBotManager {
 
 				UpdateSecPlaylistTabLists();
 
-				GlobalFunctions.ExecuteMultipleThreadSafeActions(e => e.Enabled = false, RemoveBrokenSongButton, RetryBrokenSongButton, AddSecondarySongButton, RemoveSecondarySongButton, ClaimSongButton);
+				GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = false, RemoveBrokenSongButton, RetryBrokenSongButton, AddSecondarySongButton, RemoveSecondarySongButton, ClaimSongButton);
 			}
 		}
 
 		private void RetryBrokenSongButton_Click(object sender, EventArgs e) {
-			GlobalFunctions.ExecuteMultipleThreadSafeActions(e => e.Enabled = false, BrokenSongsListBox, LoadedSongsListBox);
+			GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = false, BrokenSongsListBox, LoadedSongsListBox);
 			SongRequestData songRequest = BrokenLinklist[BrokenSongsListBox.SelectedIndex];
 			BrokenLinklist.RemoveAt(BrokenSongsListBox.SelectedIndex);
 
-			GetYouTubeWebData(songRequest).ContinueWith((e) => {
+			GetYouTubeWebData(songRequest).ContinueWith((t) => {
 				UpdateSecPlaylistTabLists();
 
-				GlobalFunctions.ExecuteMultipleThreadSafeActions(e => e.Enabled = true, BrokenSongsListBox, LoadedSongsListBox);
+				GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = true, BrokenSongsListBox, LoadedSongsListBox);
 			});
 		}
 
 		private void RetryAllBrokenSongButton_Click(object sender, EventArgs e) {
-			GlobalFunctions.ExecuteMultipleThreadSafeActions(e => e.Enabled = false, BrokenSongsListBox, LoadedSongsListBox);
+			GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = false, BrokenSongsListBox, LoadedSongsListBox);
 			List<SongRequestData> songRequests = new List<SongRequestData>();
 			BrokenLinklist.ForEach(x => songRequests.Add(x));
 			BrokenLinklist.Clear();
 
-			Task.Factory.StartNew(() => {
-				List<Thread> ThreadList = new List<Thread>();
-				songRequests.ForEach(x => {
-					ThreadList.Add(new Thread(() => GetYouTubeWebData(x).Wait()));
-				});
-				ThreadList.ForEach(x => x.Start());
+			Dictionary<SongRequestData, bool> CompletionList = new Dictionary<SongRequestData, bool>();
+			songRequests.ForEach(x => CompletionList.Add(x, false));
+			List<Task> tasks = new List<Task> {
+				Task.Run(() => {
+					while (CompletionList.Values.Any(x => x == false)) {
+						double value = Math.Round((CompletionList.TakeWhile(z => z.Value).Count() / CompletionList.Count) * 100d);
 
-				// Progress Bar and completion checker
-				while (ThreadList.Any(e => e.IsAlive)) {
-					double alive = ThreadList.TakeWhile(e => !e.IsAlive).Count();
-					double all = ThreadList.Count;
+						MainProgressBar.ThreadSafeAction(x => x.Value = (int)value);
+					}
 
-					int value = (int)Math.Round((alive / all) * 100d);
+					PostToDebug.Invoke("Secondary Playlist Loaded. All Threads Completed. [" + SecondarySonglist.Count + " Successful] - [" + BrokenLinklist.Count + " Failed]");
+					SecSongListInitalized = true;
+					AppWorking = false;
+					UpdateSecPlaylistTabLists();
 
-					MainProgressBar.ThreadSafeAction(f => f.Value = value);
-				}
-				PostToDebug.Invoke("Secondary Playlist Loaded. All Threads Completed.");
-				UpdateSecPlaylistTabLists();
+					MainProgressBar.ThreadSafeAction(x => x.Value = 0);
 
-				MainProgressBar.ThreadSafeAction(f => f.Value = 0);
-
-				// Write the updated details to the file
-				WriteSongListsToFile();
-
-				GlobalFunctions.ExecuteMultipleThreadSafeActions(e => e.Enabled = true, BrokenSongsListBox, LoadedSongsListBox);
-			});
+					GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = true, BrokenSongsListBox, LoadedSongsListBox);
+				})
+			};
+			tasks.AddRange(songRequests.Select(x => GetYouTubeWebData(x).ContinueWith(t => { CompletionList[x] = true; })));
+			Task.WhenAll(tasks);
 		}
 
 		private void LoadedSongsListBox_SelectedIndexChanged(object sender, EventArgs e) {
-			GlobalFunctions.ExecuteMultipleThreadSafeActions(e => e.Enabled = LoadedSongsListBox.SelectedIndex != -1, RemoveSecondarySongButton, ClaimSongButton);
-			GlobalFunctions.ExecuteMultipleThreadSafeActions(e => e.Enabled = false, RemoveBrokenSongButton, RetryBrokenSongButton, AddSecondarySongButton);
+			GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = LoadedSongsListBox.SelectedIndex != -1, RemoveSecondarySongButton, ClaimSongButton);
+			GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = false, RemoveBrokenSongButton, RetryBrokenSongButton, AddSecondarySongButton);
 			if (LoadedSongsListBox.SelectedIndex != -1) {
 				SecondaryTextBoxAddField.Text = SecondarySonglist[LoadedSongsListBox.SelectedIndex].SongData.Link;
 			}
 		}
 
 		private void BrokenSongsListBox_SelectedIndexChanged(object sender, EventArgs e) {
-			GlobalFunctions.ExecuteMultipleThreadSafeActions(e => e.Enabled = false, RemoveSecondarySongButton, AddSecondarySongButton);
-			GlobalFunctions.ExecuteMultipleThreadSafeActions(e => e.Enabled = BrokenSongsListBox.SelectedIndex != -1, RemoveBrokenSongButton, RetryBrokenSongButton, ClaimSongButton);
+			GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = false, RemoveSecondarySongButton, AddSecondarySongButton);
+			GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = BrokenSongsListBox.SelectedIndex != -1, RemoveBrokenSongButton, RetryBrokenSongButton, ClaimSongButton);
 			if (BrokenSongsListBox.SelectedIndex != -1) {
 				SecondaryTextBoxAddField.Text = BrokenLinklist[BrokenSongsListBox.SelectedIndex].Link;
 			}
 		}
 
 		private void ClaimSongButton_Click(object sender, EventArgs e) {
-			GlobalFunctions.ExecuteMultipleThreadSafeActions(e => e.Enabled = false, BrokenSongsListBox, LoadedSongsListBox);
+			GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = false, BrokenSongsListBox, LoadedSongsListBox);
 			if (LoadedSongsListBox.SelectedIndex != -1) {
 				SecondarySonglist[LoadedSongsListBox.SelectedIndex].SongData.Requester = TwitchBotLoginDetails.UserName;
 			} else if (BrokenSongsListBox.SelectedIndex != -1) {
@@ -1008,28 +1016,33 @@ namespace TwitchBotManager {
 			}
 			UpdateSecPlaylistTabLists();
 			WriteSongListsToFile();
-			GlobalFunctions.ExecuteMultipleThreadSafeActions(e => e.Enabled = true, BrokenSongsListBox, LoadedSongsListBox);
+			GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = true, BrokenSongsListBox, LoadedSongsListBox);
 		}
 
 		private void ClaimAllSongsButton_Click(object sender, EventArgs e) {
-			GlobalFunctions.ExecuteMultipleThreadSafeActions(e => e.Enabled = false, BrokenSongsListBox, LoadedSongsListBox);
-			SecondarySonglist.ForEach(e => {
-				e.SongData.Requester = TwitchBotLoginDetails.UserName;
+			GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = false, BrokenSongsListBox, LoadedSongsListBox);
+			SecondarySonglist.ForEach(x => {
+				x.SongData.Requester = TwitchBotLoginDetails.UserName;
 			});
-			BrokenLinklist.ForEach(e => {
-				e.Requester = TwitchBotLoginDetails.UserName;
+			BrokenLinklist.ForEach(x => {
+				x.Requester = TwitchBotLoginDetails.UserName;
 			});
 			UpdateSecPlaylistTabLists();
 			WriteSongListsToFile();
-			GlobalFunctions.ExecuteMultipleThreadSafeActions(e => e.Enabled = true, BrokenSongsListBox, LoadedSongsListBox);
+			GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = true, BrokenSongsListBox, LoadedSongsListBox);
 		}
 
 		private void SecondaryTextBoxAddField_TextChanged(object sender, EventArgs e) {
 			AddSecondarySongButton.ThreadSafeAction(x => x.Enabled = true);
 		}
 
+		private void WriteUpdatedSongInfoToFileButton_Click(object sender, EventArgs e) {
+			WriteSongListsToFile();
+		}
+
 		#endregion
 
 		#endregion
+
 	}
 }

@@ -77,6 +77,7 @@ namespace TwitchBotManager {
 			this.ConnectionLabel = new System.Windows.Forms.Label();
 			this.CurrentSongRequestLabel = new System.Windows.Forms.Label();
 			this.MainProgressBar = new System.Windows.Forms.ProgressBar();
+			this.WriteUpdatedSongInfoToFileButton = new System.Windows.Forms.Button();
 			((System.ComponentModel.ISupportInitialize)(this.SongRequestVideoView)).BeginInit();
 			this.LoadingBar.SuspendLayout();
 			this.MainTabControl.SuspendLayout();
@@ -429,6 +430,7 @@ namespace TwitchBotManager {
 			// 
 			// SecondaryPlaylistManagementTab
 			// 
+			this.SecondaryPlaylistManagementTab.Controls.Add(this.WriteUpdatedSongInfoToFileButton);
 			this.SecondaryPlaylistManagementTab.Controls.Add(this.ClaimSongButton);
 			this.SecondaryPlaylistManagementTab.Controls.Add(this.ClaimAllSongsButton);
 			this.SecondaryPlaylistManagementTab.Controls.Add(this.RetryAllBrokenSongButton);
@@ -624,6 +626,16 @@ namespace TwitchBotManager {
 			this.MainProgressBar.Size = new System.Drawing.Size(100, 23);
 			this.MainProgressBar.TabIndex = 21;
 			// 
+			// WriteUpdatedSongInfoToFileButton
+			// 
+			this.WriteUpdatedSongInfoToFileButton.Location = new System.Drawing.Point(847, 385);
+			this.WriteUpdatedSongInfoToFileButton.Name = "WriteUpdatedSongInfoToFileButton";
+			this.WriteUpdatedSongInfoToFileButton.Size = new System.Drawing.Size(102, 23);
+			this.WriteUpdatedSongInfoToFileButton.TabIndex = 12;
+			this.WriteUpdatedSongInfoToFileButton.Text = "Update File Data";
+			this.WriteUpdatedSongInfoToFileButton.UseVisualStyleBackColor = true;
+			this.WriteUpdatedSongInfoToFileButton.Click += new System.EventHandler(this.WriteUpdatedSongInfoToFileButton_Click);
+			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -711,6 +723,7 @@ namespace TwitchBotManager {
 		private System.Windows.Forms.Button RetryAllBrokenSongButton;
 		private System.Windows.Forms.Button ClaimSongButton;
 		private System.Windows.Forms.Button ClaimAllSongsButton;
+		private System.Windows.Forms.Button WriteUpdatedSongInfoToFileButton;
 	}
 }
 
