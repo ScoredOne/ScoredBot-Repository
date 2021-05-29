@@ -269,6 +269,7 @@ namespace TwitchBotManager {
 				twitchBot.OnAddSong += TwitchBot_OnAddSong;
 				twitchBot.OnClearSongRequests += TwitchBot_OnClearSongRequests;
 				twitchBot.OnPauseSongRequests += TwitchBot_OnPauseSongRequests;
+				twitchBot.OnPlaySongRequests += TwitchBot_OnPlaySongRequests;
 				twitchBot.OnPrintSongList += TwitchBot_OnPrintSongList;
 				twitchBot.OnPrintUserSongRequest += TwitchBot_OnPrintUserSongRequest;
 				twitchBot.OnRemoveAllSongs += TwitchBot_OnRemoveAllSongs;
@@ -431,7 +432,11 @@ namespace TwitchBotManager {
 		}
 
 		private void TwitchBot_OnPauseSongRequests(object sender, BotCommandContainer e) {
-			_mp.Pause();
+			MediaPlayerPause();
+		}
+
+		private void TwitchBot_OnPlaySongRequests(object sender, BotCommandContainer e) {
+			MediaPlayerPlay();
 		}
 
 		private void TwitchBot_OnPrintSongList(object sender, BotCommandContainer e) {
@@ -598,6 +603,30 @@ namespace TwitchBotManager {
 		#endregion
 
 		#region ### MEDIA PLAYER AND SONG LOADER ###
+
+		private void MediaPlayerPlay() {
+			if (_mp.WillPlay) {
+				_mp.Play();
+			} else {
+				PlayMedia();
+			}
+
+			GlobalFunctions.UpdateSongRequest(CurrentSongRequestLabel, SongOutputText.InputString = CurrentSong.ToString() + " ||" + twitchBot.SongCommandPrefix + "|| ");
+
+			SongRequestsPlaying = true;
+
+			PostToDebug.Invoke("Song Requests Playing");
+		}
+
+		private void MediaPlayerPause() {
+			_mp.Pause();
+
+			GlobalFunctions.UpdateSongRequest(CurrentSongRequestLabel, SongOutputText.InputString = "Song Requests Paused");
+
+			SongRequestsPlaying = false;
+
+			PostToDebug.Invoke("Song Requests Paused");
+		}
 
 		Random SecondarySongListRandomNumber;
 		private async void PlayMedia() {
@@ -774,28 +803,9 @@ namespace TwitchBotManager {
 
 		private void PlayPauseButton_Click(object sender, EventArgs e) {
 			if (_mp.IsPlaying) {
-				if (_mp.CanPause) {
-					_mp.Pause();
-
-					GlobalFunctions.UpdateSongRequest(CurrentSongRequestLabel, SongOutputText.InputString = "Song Requests Paused");
-
-					SongRequestsPlaying = false;
-
-					PostToDebug.Invoke("Song Requests Paused");
-				}
+				MediaPlayerPause();
 			} else {
-				if (_mp.WillPlay) {
-					_mp.Play();
-
-					GlobalFunctions.UpdateSongRequest(CurrentSongRequestLabel, SongOutputText.InputString = CurrentSong.ToString() + " ||" + twitchBot.SongCommandPrefix + "|| ");
-
-				} else {
-					PlayMedia();
-				}
-
-				SongRequestsPlaying = true;
-
-				PostToDebug.Invoke("Song Requests Playing");
+				MediaPlayerPlay();
 			}
 		}
 

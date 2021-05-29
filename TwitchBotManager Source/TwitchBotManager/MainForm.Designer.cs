@@ -60,6 +60,7 @@ namespace TwitchBotManager {
 			this.RemoveSongFromSecondaryButton = new System.Windows.Forms.Button();
 			this.SkipSongButton = new System.Windows.Forms.Button();
 			this.SecondaryPlaylistManagementTab = new System.Windows.Forms.TabPage();
+			this.WriteUpdatedSongInfoToFileButton = new System.Windows.Forms.Button();
 			this.ClaimSongButton = new System.Windows.Forms.Button();
 			this.ClaimAllSongsButton = new System.Windows.Forms.Button();
 			this.RetryAllBrokenSongButton = new System.Windows.Forms.Button();
@@ -77,7 +78,7 @@ namespace TwitchBotManager {
 			this.ConnectionLabel = new System.Windows.Forms.Label();
 			this.CurrentSongRequestLabel = new System.Windows.Forms.Label();
 			this.MainProgressBar = new System.Windows.Forms.ProgressBar();
-			this.WriteUpdatedSongInfoToFileButton = new System.Windows.Forms.Button();
+			this.SettingsTab = new System.Windows.Forms.TabPage();
 			((System.ComponentModel.ISupportInitialize)(this.SongRequestVideoView)).BeginInit();
 			this.LoadingBar.SuspendLayout();
 			this.MainTabControl.SuspendLayout();
@@ -371,6 +372,7 @@ namespace TwitchBotManager {
 			this.MainTabControl.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+			this.MainTabControl.Controls.Add(this.SettingsTab);
 			this.MainTabControl.Controls.Add(this.SongRequestTab);
 			this.MainTabControl.Controls.Add(this.SecondaryPlaylistManagementTab);
 			this.MainTabControl.Controls.Add(this.DebugTab);
@@ -449,6 +451,16 @@ namespace TwitchBotManager {
 			this.SecondaryPlaylistManagementTab.TabIndex = 3;
 			this.SecondaryPlaylistManagementTab.Text = "Sec\' Playlist Management";
 			this.SecondaryPlaylistManagementTab.UseVisualStyleBackColor = true;
+			// 
+			// WriteUpdatedSongInfoToFileButton
+			// 
+			this.WriteUpdatedSongInfoToFileButton.Location = new System.Drawing.Point(847, 385);
+			this.WriteUpdatedSongInfoToFileButton.Name = "WriteUpdatedSongInfoToFileButton";
+			this.WriteUpdatedSongInfoToFileButton.Size = new System.Drawing.Size(102, 23);
+			this.WriteUpdatedSongInfoToFileButton.TabIndex = 12;
+			this.WriteUpdatedSongInfoToFileButton.Text = "Update File Data";
+			this.WriteUpdatedSongInfoToFileButton.UseVisualStyleBackColor = true;
+			this.WriteUpdatedSongInfoToFileButton.Click += new System.EventHandler(this.WriteUpdatedSongInfoToFileButton_Click);
 			// 
 			// ClaimSongButton
 			// 
@@ -626,15 +638,14 @@ namespace TwitchBotManager {
 			this.MainProgressBar.Size = new System.Drawing.Size(100, 23);
 			this.MainProgressBar.TabIndex = 21;
 			// 
-			// WriteUpdatedSongInfoToFileButton
+			// SettingsTab
 			// 
-			this.WriteUpdatedSongInfoToFileButton.Location = new System.Drawing.Point(847, 385);
-			this.WriteUpdatedSongInfoToFileButton.Name = "WriteUpdatedSongInfoToFileButton";
-			this.WriteUpdatedSongInfoToFileButton.Size = new System.Drawing.Size(102, 23);
-			this.WriteUpdatedSongInfoToFileButton.TabIndex = 12;
-			this.WriteUpdatedSongInfoToFileButton.Text = "Update File Data";
-			this.WriteUpdatedSongInfoToFileButton.UseVisualStyleBackColor = true;
-			this.WriteUpdatedSongInfoToFileButton.Click += new System.EventHandler(this.WriteUpdatedSongInfoToFileButton_Click);
+			this.SettingsTab.Location = new System.Drawing.Point(4, 22);
+			this.SettingsTab.Name = "SettingsTab";
+			this.SettingsTab.Size = new System.Drawing.Size(1114, 429);
+			this.SettingsTab.TabIndex = 4;
+			this.SettingsTab.Text = "Settings";
+			this.SettingsTab.UseVisualStyleBackColor = true;
 			// 
 			// MainForm
 			// 
@@ -724,6 +735,7 @@ namespace TwitchBotManager {
 		private System.Windows.Forms.Button ClaimSongButton;
 		private System.Windows.Forms.Button ClaimAllSongsButton;
 		private System.Windows.Forms.Button WriteUpdatedSongInfoToFileButton;
+		private System.Windows.Forms.TabPage SettingsTab;
 	}
 }
 
