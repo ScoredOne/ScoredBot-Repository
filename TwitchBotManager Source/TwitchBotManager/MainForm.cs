@@ -9,7 +9,6 @@ using System.Media;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web.Management;
 using System.Windows.Forms;
 
 using LibVLCSharp.Shared;
@@ -367,6 +366,10 @@ namespace TwitchBotManager {
 			PostToDebug.Invoke("TwitchBotLoginDetails Set and saved");
 		}
 
+		private void reloadSecondarySongListToolStripMenuItem_Click(object sender, EventArgs e) {
+			LoadSecondaryPlaylist();
+		}
+
 		#endregion
 
 		#region ##### Song Request Tabs and Logic	#####
@@ -666,7 +669,7 @@ namespace TwitchBotManager {
 
 			SaveLinkButton.ThreadSafeAction(x => {
 				x.Enabled = !SecondarySonglist.Any(z => z.SongData.Link.Equals(CurrentSong.Link));
-				RemoveSongFromSecondaryButton.ThreadSafeAction(new Action<Control>(z => z.Enabled = !SaveLinkButton.Enabled)); // Ensures previous line was executed before working on this thread
+				RemoveSongFromSecondaryButton.ThreadSafeAction(z => z.Enabled = !SaveLinkButton.Enabled); // Ensures previous line was executed before working on this thread
 			});
 
 			// Output song details
@@ -696,6 +699,17 @@ namespace TwitchBotManager {
 		}
 
 		private void LoadSecondaryPlaylist() {
+			GlobalFunctions.ExecuteMultipleThreadSafeActions<Control>(x => x.Enabled = false, 
+				RemoveBrokenSongButton, 
+				RetryBrokenSongButton, 
+				AddSecondarySongButton, 
+				RemoveSecondarySongButton, 
+				ClaimSongButton, 
+				ClaimAllSongsButton, 
+				WriteUpdatedSongInfoToFileButton, 
+				LoadedSongsListBox, 
+				BrokenSongsListBox);
+
 			AppWorking = true;
 			SecSongListInitalized = false;
 			MainProgressBar.Value = 0;
@@ -735,6 +749,11 @@ namespace TwitchBotManager {
 
 						MainProgressBar.ThreadSafeAction(x => x.Value = 0);
 
+						GlobalFunctions.ExecuteMultipleThreadSafeActions<Control>(x => x.Enabled = true, 
+							ClaimAllSongsButton, 
+							WriteUpdatedSongInfoToFileButton,
+							LoadedSongsListBox,
+							BrokenSongsListBox);
 					})
 				};
 
@@ -745,6 +764,12 @@ namespace TwitchBotManager {
 				SecSongListInitalized = true;
 				AppWorking = false;
 				PostToDebug.Invoke("Secondary Playlist not loaded, either it is empty or it has been corrupted.");
+
+				GlobalFunctions.ExecuteMultipleThreadSafeActions<Control>(x => x.Enabled = true, 
+					ClaimAllSongsButton, 
+					WriteUpdatedSongInfoToFileButton,
+					LoadedSongsListBox,
+					BrokenSongsListBox);
 			}
 		}
 
@@ -774,21 +799,25 @@ namespace TwitchBotManager {
 			return data;
 		}
 
-		public void WriteSongListsToFile() {
-			List<string> refreshedList = new List<string>();
-			SecondarySonglist.ForEach(x => {
-				refreshedList.Add(JsonConvert.SerializeObject(x.SongData));
-			});
-			BrokenLinklist.ForEach(x => {
-				refreshedList.Add(JsonConvert.SerializeObject(x));
-			});
-			refreshedList.Add(Environment.NewLine);
-			File.WriteAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt", refreshedList);
-			PostToDebug.Invoke("Secondary Song List successfully updated");
+		public void WriteSongListsToFile(bool promptRequired) {
+			if (SecSongListInitalized) {
+
+				DialogResult prompt = MessageBox.Show("Confirm", "Are you sure you wish to overwrite the saved song list with whats in this App?", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+				if (!promptRequired || prompt == DialogResult.Yes) {
+					List<string> refreshedList = SecondarySonglist.Select(x => JsonConvert.SerializeObject(x.SongData)).ToList();
+					refreshedList.AddRange(BrokenLinklist.Select(x => JsonConvert.SerializeObject(x)));
+
+					File.WriteAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt", refreshedList);
+					PostToDebug.Invoke("Secondary Song List successfully updated");
+
+				}
+			}
 		}
 
 		public void WriteSingleSongToFile(SongRequestData song) {
-			File.AppendAllText(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt", JsonConvert.SerializeObject(song));
+			string output = JsonConvert.SerializeObject(song) + Environment.NewLine;
+			File.AppendAllText(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt", output);
 			PostToDebug.Invoke("Secondary Song List successfully updated");
 		}
 
@@ -886,27 +915,21 @@ namespace TwitchBotManager {
 		public void UpdateSecPlaylistTabLists() {
 			if (SecSongListInitalized) {
 				LoadedSongsListBox.ThreadSafeAction(e => {
-					e.Items.Clear();
 					List<string> songdataString = new List<string>();
 					for (int x = 0; x < SecondarySonglist.Count; x++) {
 						songdataString.Add((x + 1).ToString() + ". " + SecondarySonglist[x].SongData.ToString());
 					}
 
-					try { // Can be null for some unknown reason sometimes so this stops unexpected exceptions
-						ListBox.ObjectCollection objectCollection = new ListBox.ObjectCollection(e, songdataString.ToArray());
-					} catch { };
+					e.DataSource = songdataString.ToArray();
 				});
 
 				BrokenSongsListBox.ThreadSafeAction(e => {
-					e.Items.Clear();
 					List<string> songdataString = new List<string>();
 					for (int x = 0; x < BrokenLinklist.Count; x++) {
 						songdataString.Add((x + 1).ToString() + ". " + BrokenLinklist[x].ToString());
 					}
 
-					try { // Can be null for some unknown reason sometimes so this stops unexpected exceptions
-						ListBox.ObjectCollection objectCollection = new ListBox.ObjectCollection(e, songdataString.ToArray());
-					} catch { };
+					e.DataSource = songdataString.ToArray();
 				});
 			}
 		}
@@ -927,6 +950,8 @@ namespace TwitchBotManager {
 		}
 
 		private void AddSecondarySongButton_Click(object sender, EventArgs e) {
+			GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = false, RemoveBrokenSongButton, RetryBrokenSongButton, AddSecondarySongButton, RemoveSecondarySongButton, ClaimSongButton, ClaimAllSongsButton, WriteUpdatedSongInfoToFileButton);
+
 			string link = SecondaryTextBoxAddField.Text.Trim();
 			string requester = TwitchBotLoginDetails.UserName;
 
@@ -954,11 +979,13 @@ namespace TwitchBotManager {
 				MessageBox.Show("Link does not appear to be a YouTube link, please check link and try again.", "Invalid Input", MessageBoxButtons.OK, MessageBoxIcon.Error);
 			}
 
-			GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = false, RemoveBrokenSongButton, RetryBrokenSongButton, AddSecondarySongButton, RemoveSecondarySongButton, ClaimSongButton);
+			GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = true, RemoveBrokenSongButton, RetryBrokenSongButton, AddSecondarySongButton, RemoveSecondarySongButton, ClaimSongButton, ClaimAllSongsButton, WriteUpdatedSongInfoToFileButton);
 		}
 
 		private void RemoveBrokenSongButton_Click(object sender, EventArgs e) {
 			if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt")) {
+				GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = false, RemoveBrokenSongButton, RetryBrokenSongButton, AddSecondarySongButton, RemoveSecondarySongButton, ClaimSongButton, ClaimAllSongsButton, WriteUpdatedSongInfoToFileButton);
+
 				List<string> songs = File.ReadAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt").ToList();
 
 				songs.RemoveAll(x => x.Contains(BrokenLinklist[BrokenSongsListBox.SelectedIndex].Link)); // Link persists compared to data changes
@@ -970,7 +997,7 @@ namespace TwitchBotManager {
 
 				UpdateSecPlaylistTabLists();
 
-				GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = false, RemoveBrokenSongButton, RetryBrokenSongButton, AddSecondarySongButton, RemoveSecondarySongButton, ClaimSongButton);
+				GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = true, RemoveBrokenSongButton, RetryBrokenSongButton, AddSecondarySongButton, RemoveSecondarySongButton, ClaimSongButton, ClaimAllSongsButton, WriteUpdatedSongInfoToFileButton);
 			}
 		}
 
@@ -1040,7 +1067,7 @@ namespace TwitchBotManager {
 				BrokenLinklist[BrokenSongsListBox.SelectedIndex].Requester = TwitchBotLoginDetails.UserName;
 			}
 			UpdateSecPlaylistTabLists();
-			WriteSongListsToFile();
+			WriteSongListsToFile(true);
 			GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = true, BrokenSongsListBox, LoadedSongsListBox);
 		}
 
@@ -1053,16 +1080,17 @@ namespace TwitchBotManager {
 				x.Requester = TwitchBotLoginDetails.UserName;
 			});
 			UpdateSecPlaylistTabLists();
-			WriteSongListsToFile();
+			WriteSongListsToFile(true);
 			GlobalFunctions.ExecuteMultipleThreadSafeActions(x => x.Enabled = true, BrokenSongsListBox, LoadedSongsListBox);
 		}
 
 		private void SecondaryTextBoxAddField_TextChanged(object sender, EventArgs e) {
-			AddSecondarySongButton.ThreadSafeAction(x => x.Enabled = true);
+			AddSecondarySongButton.ThreadSafeAction(x => x.Enabled = !(SecondarySonglist.Any(z => z.SongData.Link.Contains(SecondaryTextBoxAddField.Text))
+																|| BrokenLinklist.Any(z => z.Link.Contains(SecondaryTextBoxAddField.Text))));
 		}
 
 		private void WriteUpdatedSongInfoToFileButton_Click(object sender, EventArgs e) {
-			WriteSongListsToFile();
+			WriteSongListsToFile(true);
 		}
 
 		#endregion

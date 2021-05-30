@@ -56,6 +56,7 @@ namespace TwitchBotManager {
 			this.SaveLinkButton = new System.Windows.Forms.Button();
 			this.SongRequestList = new System.Windows.Forms.ListBox();
 			this.MainTabControl = new System.Windows.Forms.TabControl();
+			this.SettingsTab = new System.Windows.Forms.TabPage();
 			this.SongRequestTab = new System.Windows.Forms.TabPage();
 			this.RemoveSongFromSecondaryButton = new System.Windows.Forms.Button();
 			this.SkipSongButton = new System.Windows.Forms.Button();
@@ -78,7 +79,7 @@ namespace TwitchBotManager {
 			this.ConnectionLabel = new System.Windows.Forms.Label();
 			this.CurrentSongRequestLabel = new System.Windows.Forms.Label();
 			this.MainProgressBar = new System.Windows.Forms.ProgressBar();
-			this.SettingsTab = new System.Windows.Forms.TabPage();
+			this.reloadSecondarySongListToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			((System.ComponentModel.ISupportInitialize)(this.SongRequestVideoView)).BeginInit();
 			this.LoadingBar.SuspendLayout();
 			this.MainTabControl.SuspendLayout();
@@ -250,7 +251,8 @@ namespace TwitchBotManager {
 			// helpToolStripMenuItem
 			// 
 			this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.aboutToolStripMenuItem});
+            this.aboutToolStripMenuItem,
+            this.reloadSecondarySongListToolStripMenuItem});
 			this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
 			this.helpToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
 			this.helpToolStripMenuItem.Text = "Help";
@@ -260,7 +262,7 @@ namespace TwitchBotManager {
 			this.aboutToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.scoredToolStripMenuItem});
 			this.aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-			this.aboutToolStripMenuItem.Size = new System.Drawing.Size(107, 22);
+			this.aboutToolStripMenuItem.Size = new System.Drawing.Size(219, 22);
 			this.aboutToolStripMenuItem.Text = "About";
 			// 
 			// scoredToolStripMenuItem
@@ -384,6 +386,15 @@ namespace TwitchBotManager {
 			this.MainTabControl.TabIndex = 18;
 			this.MainTabControl.SelectedIndexChanged += new System.EventHandler(this.MainTabControl_TabIndexChanged);
 			// 
+			// SettingsTab
+			// 
+			this.SettingsTab.Location = new System.Drawing.Point(4, 22);
+			this.SettingsTab.Name = "SettingsTab";
+			this.SettingsTab.Size = new System.Drawing.Size(1114, 429);
+			this.SettingsTab.TabIndex = 4;
+			this.SettingsTab.Text = "Settings";
+			this.SettingsTab.UseVisualStyleBackColor = true;
+			// 
 			// SongRequestTab
 			// 
 			this.SongRequestTab.Controls.Add(this.RemoveSongFromSecondaryButton);
@@ -454,6 +465,7 @@ namespace TwitchBotManager {
 			// 
 			// WriteUpdatedSongInfoToFileButton
 			// 
+			this.WriteUpdatedSongInfoToFileButton.Enabled = false;
 			this.WriteUpdatedSongInfoToFileButton.Location = new System.Drawing.Point(847, 385);
 			this.WriteUpdatedSongInfoToFileButton.Name = "WriteUpdatedSongInfoToFileButton";
 			this.WriteUpdatedSongInfoToFileButton.Size = new System.Drawing.Size(102, 23);
@@ -464,6 +476,7 @@ namespace TwitchBotManager {
 			// 
 			// ClaimSongButton
 			// 
+			this.ClaimSongButton.Enabled = false;
 			this.ClaimSongButton.Location = new System.Drawing.Point(955, 385);
 			this.ClaimSongButton.Name = "ClaimSongButton";
 			this.ClaimSongButton.Size = new System.Drawing.Size(75, 23);
@@ -475,6 +488,7 @@ namespace TwitchBotManager {
 			// ClaimAllSongsButton
 			// 
 			this.ClaimAllSongsButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+			this.ClaimAllSongsButton.Enabled = false;
 			this.ClaimAllSongsButton.Location = new System.Drawing.Point(1036, 385);
 			this.ClaimAllSongsButton.Name = "ClaimAllSongsButton";
 			this.ClaimAllSongsButton.Size = new System.Drawing.Size(75, 23);
@@ -638,14 +652,12 @@ namespace TwitchBotManager {
 			this.MainProgressBar.Size = new System.Drawing.Size(100, 23);
 			this.MainProgressBar.TabIndex = 21;
 			// 
-			// SettingsTab
+			// reloadSecondarySongListToolStripMenuItem
 			// 
-			this.SettingsTab.Location = new System.Drawing.Point(4, 22);
-			this.SettingsTab.Name = "SettingsTab";
-			this.SettingsTab.Size = new System.Drawing.Size(1114, 429);
-			this.SettingsTab.TabIndex = 4;
-			this.SettingsTab.Text = "Settings";
-			this.SettingsTab.UseVisualStyleBackColor = true;
+			this.reloadSecondarySongListToolStripMenuItem.Name = "reloadSecondarySongListToolStripMenuItem";
+			this.reloadSecondarySongListToolStripMenuItem.Size = new System.Drawing.Size(219, 22);
+			this.reloadSecondarySongListToolStripMenuItem.Text = "Reload Secondary Song List";
+			this.reloadSecondarySongListToolStripMenuItem.Click += new System.EventHandler(this.reloadSecondarySongListToolStripMenuItem_Click);
 			// 
 			// MainForm
 			// 
@@ -736,6 +748,7 @@ namespace TwitchBotManager {
 		private System.Windows.Forms.Button ClaimAllSongsButton;
 		private System.Windows.Forms.Button WriteUpdatedSongInfoToFileButton;
 		private System.Windows.Forms.TabPage SettingsTab;
+		private System.Windows.Forms.ToolStripMenuItem reloadSecondarySongListToolStripMenuItem;
 	}
 }
 
