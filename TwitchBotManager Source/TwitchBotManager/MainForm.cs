@@ -28,6 +28,20 @@ using Timer = System.Windows.Forms.Timer; // System.Threading; conflict
 // Option to load songs on run
 // Option to load songs raw (link only)
 
+/* TODO: MAIN LIST
+- (optional) check why media player is overloading { get song pos, PlayMedia => current song request, song pos = old pos}
+- User Blacklist for songs
+- Remove song from requested list
+- Twitch chat message toggling
+- Offline mode
+- Local songs secondary playlist entries
+- Audio only mode
+- Audio only song buffer
+- Follower only request mode
+- User chat tracker
+- Whisper functionality for mods
+*/
+
 
 namespace TwitchBotManager {
 
@@ -47,7 +61,7 @@ namespace TwitchBotManager {
 		public (string UserName, string OAuth, string Target) TwitchBotLoginDetails { get; private set; } // UserName, oauth:xxxxxxxxxxxxxxxxxxxxxxxxxxxxx, TargetChannel
 
 		public LibVLC _libVLC;
-		public MediaPlayer _mp;
+		public MediaPlayer VLCPlayer;
 		public Media media;
 
 		public bool isFullscreen = false;
@@ -101,10 +115,8 @@ namespace TwitchBotManager {
 			oldVideoLocation = SongRequestVideoView.Location;
 
 			//VLC stuff
-			_libVLC = new LibVLC("--preferred-resolution=240");
-			_mp = new MediaPlayer(_libVLC);
-			SongRequestVideoView.MediaPlayer = _mp;
-			_mp.EndReached += Media_EndReached;
+			SongRequestVideoView.MediaPlayer = VLCPlayer = new MediaPlayer(_libVLC = new LibVLC("--preferred-resolution=240"));
+			VLCPlayer.EndReached += Media_EndReached;
 
 			Application.ApplicationExit += Application_ApplicationExit;
 
@@ -114,8 +126,8 @@ namespace TwitchBotManager {
 			GlobalFunctions.CheckAndCreateOutputDirectoryFiles();
 			LoadSecondaryPlaylist();
 			TwitchBotLoginDetails = GlobalFunctions.LoadLoginFromFile();
-			_mp.Volume = GlobalFunctions.LoadMediaPlayerVolume();
-			VolumeLabel.Text = "Volume: " + _mp.Volume;
+			VLCPlayer.Volume = GlobalFunctions.LoadMediaPlayerVolume();
+			VolumeLabel.Text = "Volume: " + VLCPlayer.Volume;
 
 			Show();
 		}
@@ -146,8 +158,8 @@ namespace TwitchBotManager {
 
 		private void Update(object sender, EventArgs e) {
 			//refresh here...
-
-			PlayPauseButton.Text = _mp.IsPlaying ? "Pause" : "Play";
+			// TODO : Clean up all this...
+			PlayPauseButton.Text = VLCPlayer.IsPlaying ? "Pause" : "Play";
 
 			if (twitchBot != null) {
 				if (twitchBot.IsActive) {
@@ -191,7 +203,7 @@ namespace TwitchBotManager {
 			if (SongRequestsSystem) {
 				PlayPauseButton.Enabled = !SongRequestsTransitioning;
 				StopPlaybackButton.Enabled = true;
-				SkipSongButton.Enabled = _mp.Media != null;
+				SkipSongButton.Enabled = VLCPlayer.Media != null;
 
 				AddLinkButton.Enabled = true;
 				RequestsButton.Enabled = true;
@@ -417,16 +429,16 @@ namespace TwitchBotManager {
 			}
 
 
-			if (!_mp.IsPlaying && Songlist.Count > 0) {
+			if (!VLCPlayer.IsPlaying && Songlist.Count > 0) {
 				PlayMedia();
 			}
 			UpdateSongListOutput();
 		}
 
 		private void TwitchBot_OnClearSongRequests(object sender, BotCommandContainer e) {
-			_mp.Stop();
-			if (_mp.Media != null) {
-				_mp.Media.Dispose();
+			VLCPlayer.Stop();
+			if (VLCPlayer.Media != null) {
+				VLCPlayer.Media.Dispose();
 			}
 			if (twitchBot != null && File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\CurrentSong.txt")) {
 				File.WriteAllText(Directory.GetCurrentDirectory() + @"\Outputs\CurrentSong.txt", "");
@@ -538,7 +550,7 @@ namespace TwitchBotManager {
 		}
 
 		private void TwitchBot_OnSkipSong(object sender, BotCommandContainer e) {
-			_mp.Position = 1;
+			VLCPlayer.Position = 1;
 			twitchBot.SendMessageToTwitchChat(e.User + " Has skipped the song.");
 			PostToDebug.Invoke("Song Skipped by " + e.User);
 		}
@@ -559,9 +571,9 @@ namespace TwitchBotManager {
 				Interval = 50 // 0.01 sec
 			};
 			IncreaseVolumeLooper.Tick += new EventHandler((s, e) => {
-				if (_mp.Volume < 100) {
-					_mp.Volume++;
-					VolumeLabel.Text = "Volume: " + _mp.Volume;
+				if (VLCPlayer.Volume < 100) {
+					VLCPlayer.Volume++;
+					VolumeLabel.Text = "Volume: " + VLCPlayer.Volume;
 				}
 			});
 			IncreaseVolumeLooper.Start();
@@ -573,7 +585,7 @@ namespace TwitchBotManager {
 			IncreaseVolumeLooper = null;
 
 			if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\MediaVolume.txt")) {
-				File.WriteAllText(Directory.GetCurrentDirectory() + @"\Outputs\MediaVolume.txt", _mp.Volume.ToString());
+				File.WriteAllText(Directory.GetCurrentDirectory() + @"\Outputs\MediaVolume.txt", VLCPlayer.Volume.ToString());
 			}
 		}
 
@@ -583,9 +595,9 @@ namespace TwitchBotManager {
 				Interval = 50 // 0.01 sec
 			};
 			DecreaseVolumeLooper.Tick += new EventHandler((s, e) => {
-				if (_mp.Volume > 0) {
-					_mp.Volume--;
-					VolumeLabel.Text = "Volume: " + _mp.Volume;
+				if (VLCPlayer.Volume > 0) {
+					VLCPlayer.Volume--;
+					VolumeLabel.Text = "Volume: " + VLCPlayer.Volume;
 				}
 			});
 			DecreaseVolumeLooper.Start();
@@ -597,10 +609,10 @@ namespace TwitchBotManager {
 			DecreaseVolumeLooper = null;
 
 			if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\MediaVolume.txt")) {
-				File.WriteAllText(Directory.GetCurrentDirectory() + @"\Outputs\MediaVolume.txt", _mp.Volume.ToString());
+				File.WriteAllText(Directory.GetCurrentDirectory() + @"\Outputs\MediaVolume.txt", VLCPlayer.Volume.ToString());
 			}
 
-			PostToDebug.Invoke("Volume set to " + _mp.Volume.ToString());
+			PostToDebug.Invoke("Volume set to " + VLCPlayer.Volume.ToString());
 		}
 
 		#endregion
@@ -608,8 +620,8 @@ namespace TwitchBotManager {
 		#region ### MEDIA PLAYER AND SONG LOADER ###
 
 		private void MediaPlayerPlay() {
-			if (_mp.WillPlay) {
-				_mp.Play();
+			if (VLCPlayer.WillPlay) {
+				VLCPlayer.Play();
 			} else {
 				PlayMedia();
 			}
@@ -622,7 +634,7 @@ namespace TwitchBotManager {
 		}
 
 		private void MediaPlayerPause() {
-			_mp.Pause();
+			VLCPlayer.Pause();
 
 			GlobalFunctions.UpdateSongRequest(CurrentSongRequestLabel, SongOutputText.InputString = "Song Requests Paused");
 
@@ -682,8 +694,8 @@ namespace TwitchBotManager {
 				var media = new Media(_libVLC, CurrentSong.Link, FromType.FromLocation);
 				await media.Parse(MediaParseOptions.ParseNetwork);
 
-				_mp.Media = media.SubItems.First();
-				_mp.Play();
+				VLCPlayer.Media = media.SubItems.First();
+				VLCPlayer.Play();
 
 				PostToDebug.Invoke("Playing song: " + (string.IsNullOrEmpty(CurrentSong.Title) ? CurrentSong.Link : CurrentSong.Title));
 
@@ -826,12 +838,12 @@ namespace TwitchBotManager {
 		#region ### EVENTS ###
 
 		private void Media_EndReached(object sender, EventArgs e) {
-			_mp.Media.Dispose();
+			VLCPlayer.Media.Dispose();
 			PlayMedia();
 		}
 
 		private void PlayPauseButton_Click(object sender, EventArgs e) {
-			if (_mp.IsPlaying) {
+			if (VLCPlayer.IsPlaying) {
 				MediaPlayerPause();
 			} else {
 				MediaPlayerPlay();
@@ -839,7 +851,7 @@ namespace TwitchBotManager {
 		}
 
 		private void StopPlaybackButton_Click(object sender, EventArgs e) {
-			_mp.Stop();
+			VLCPlayer.Stop();
 
 			GlobalFunctions.UpdateSongRequest(CurrentSongRequestLabel, SongOutputText.InputString = "Song Requests Stopped");
 
