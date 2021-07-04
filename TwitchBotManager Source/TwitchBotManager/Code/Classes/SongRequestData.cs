@@ -9,7 +9,7 @@ namespace TwitchBotManager.Code.Classes {
 		public string Title;
 		public int? LengthSec;
 
-		public SongRequestData(string link, string requester, string title = null, int? length = null) {
+		public SongRequestData(string link, string requester, string title = "", int? length = null) {
 			Link = link;
 			Requester = requester;
 			Title = title;
@@ -47,7 +47,7 @@ namespace TwitchBotManager.Code.Classes {
 				return new SongRequestData(valuePairs["Link"], valuePairs["Requester"], valuePairs["Title"], intvalue);
 			}
 
-			return new SongRequestData(valuePairs["Link"], valuePairs["Requester"], "", 0);
+			return new SongRequestData(valuePairs["Link"], valuePairs["Requester"]);
 		}
 	}
 }

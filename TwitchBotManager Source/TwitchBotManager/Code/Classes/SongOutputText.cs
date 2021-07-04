@@ -10,7 +10,7 @@
 			}
 		}
 
-		private readonly static int OutputLength = 75;
+		private readonly static int OutputLength = 95;
 
 		/// <summary>
 		/// Outputs the string to the length of 75, progresses 1 to the right with each call.
@@ -41,7 +41,8 @@
 
 			string output = "";
 
-			if (lowerValue >= upperValue) { // Because substring broke... why... dont know, said out of array but it wasnt so...
+			// Because substring broke... why... dont know, said out of array but it wasnt so this is the backup...
+			if (lowerValue >= upperValue) {
 				int count = 0;
 				for (int x = lowerValue; x < array.Length; x++, count++) {
 					output += array[x];

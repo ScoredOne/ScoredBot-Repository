@@ -310,7 +310,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="plugins\lua\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -321,4 +323,142 @@
   </Target>
   <Import Project="..\packages\Microsoft.NETFramework.ReferenceAssemblies.net472.1.0.2\build\Microsoft.NETFramework.ReferenceAssemblies.net472.targets" Condition="Exists('..\packages\Microsoft.NETFramework.ReferenceAssemblies.net472.1.0.2\build\Microsoft.NETFramework.ReferenceAssemblies.net472.targets')" />
   <Import Project="..\packages\VideoLAN.LibVLC.Windows.3.0.14\build\VideoLAN.LibVLC.Windows.targets" Condition="Exists('..\packages\VideoLAN.LibVLC.Windows.3.0.14\build\VideoLAN.LibVLC.Windows.targets')" />
+  <ItemGroup> <!-- LibVLC Exclude Plugins -->
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libaccess_srt_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libvnc_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libdcp_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\liblibbluray_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libdshow_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libdtv_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libsftp_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libbluray-j2se-1.3.0.jar" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\librtp_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\liblive555_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libnfs_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libdvdnav_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libcdda_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libdvdread_plugin.dll" />
+    <!--<VlcWindowsX64ExcludeFiles Include="plugins\access\libhttps_plugin.dll" />-->
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libaccess_realrtsp_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libftp_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\librist_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libvcd_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libaccess_mms_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libvdr_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libhttp_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libsatip_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libbluray-awt-j2se-1.3.0.jar" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libaccess_imem_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libfilesystem_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libsmb_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libtimecode_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libaccess_wasapi_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libscreen_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libshm_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libaccess_concat_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libudp_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libidummy_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libimem_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libattachment_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libtcp_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access\libsdp_plugin.dll" />
+
+    <VlcWindowsX64ExcludeFiles Include="plugins\access_output\%2A"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\audio_filter\%2A"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\audio_mixer\%2A"/>
+	
+    <VlcWindowsX64ExcludeFiles Include="plugins\audio_output\libadummy_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\audio_output\libafile_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\audio_output\libamem_plugin.dll"/>
+    <!--<VlcWindowsX64ExcludeFiles Include="plugins\audio_output\libdirectsound_plugin.dll"/>-->
+    <VlcWindowsX64ExcludeFiles Include="plugins\audio_output\libmmdevice_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\audio_output\libwasapi_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\audio_output\libwaveout_plugin.dll"/>
+	
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libaom_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libdav1d_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libx26410b_plugin.dll"/>
+	
+    <VlcWindowsX64ExcludeFiles Include="plugins\control\%2A"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\d3d9\%2A"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\d3d11\%2A"/>
+	
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libadaptive_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libaiff_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libasf_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libau_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libavi_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libcaf_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libdemux_cdg_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libdemux_chromecast_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libdemux_stl_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libdemuxdump_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libdiracsys_plugin.dll"/>
+    <!--<VlcWindowsX64ExcludeFiles Include="plugins\demux\libdirectory_demux_plugin.dll"/>-->
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libes_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libflacsys_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libgme_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libh26x_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libimage_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libmjpeg_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libmkv_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libmod_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libmp4_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libmpc_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libmpgv_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libnoseek_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libnsc_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libnsv_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libnuv_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libogg_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libplaylist_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libps_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libpva_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\librawaud_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\librawdv_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\librawvid_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libreal_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libsid_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libsmf_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libsubtitle_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libts_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libtta_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libty_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libvc1_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libvobsub_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libvoc_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libwav_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libxa_plugin.dll"/>
+	
+    <VlcWindowsX64ExcludeFiles Include="plugins\gui\%2A"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\keystore\%2A"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\logger\%2A"/>
+    <!--<VlcWindowsX64ExcludeFiles Include="plugins\lua\%2A"/>-->
+    <VlcWindowsX64ExcludeFiles Include="plugins\meta_engine\%2A"/>
+	
+    <VlcWindowsX64ExcludeFiles Include="plugins\misc\libaddonsfsstorage_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\misc\libaddonsvorepository_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\misc\libaudioscrobbler_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\misc\libexport_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\misc\libfingerprinter_plugin.dll"/>
+    <!--<VlcWindowsX64ExcludeFiles Include="plugins\misc\libgnutls_plugin.dll"/>-->
+    <VlcWindowsX64ExcludeFiles Include="plugins\misc\liblogger_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\misc\libstats_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\misc\libvod_rtsp_plugin.dll"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\misc\libxml_plugin.dll"/>
+	
+    <VlcWindowsX64ExcludeFiles Include="plugins\mux\%2A"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\packetizer\%2A"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\services_discovery\%2A"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\spu\%2A"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\stream_extractor\%2A"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\stream_filter\%2A"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\stream_out\%2A"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\text_renderer\%2A"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\video_chroma\%2A"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\video_filter\%2A"/>
+    <!--<VlcWindowsX64ExcludeFiles Include="plugins\video_output\%2A"/>-->
+    <VlcWindowsX64ExcludeFiles Include="plugins\video_splitter\%2A"/>
+    <VlcWindowsX64ExcludeFiles Include="plugins\visualization\%2A"/>
+  </ItemGroup>
 </Project>

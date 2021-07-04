@@ -15,7 +15,7 @@ namespace TwitchBotManager.Code.Classes {
 
 		static GlobalFunctions() {
 			// TODO : add optional file path instillation - Disable related functionality if error
-			YoutubeDLWorker = new YoutubeDL(100) { // Python restricted
+			YoutubeDLWorker = new YoutubeDL(10) { // Python restricted to a maximum of ~100
 				YoutubeDLPath = Directory.GetCurrentDirectory() + @"\youtube-dl\youtube-dl.exe",
 				FFmpegPath = Directory.GetCurrentDirectory() + @"\ffmpeg\ffmpeg.exe"
 			};

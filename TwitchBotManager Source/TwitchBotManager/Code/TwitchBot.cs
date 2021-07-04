@@ -49,7 +49,7 @@ namespace TwitchBotManager.Code {
 
 		private readonly TwitchClient client;
 
-		public string SongCommandPrefix = "!SR";
+		public static readonly string SongCommandPrefix = "!SR";
 
 		public string TwitchUsername;
 		public string TwitchOAuth;
