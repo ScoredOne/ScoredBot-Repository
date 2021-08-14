@@ -52,12 +52,12 @@ namespace TwitchBotManager {
 			this.DecreaseVolumeButton = new System.Windows.Forms.Button();
 			this.VolumeLabel = new System.Windows.Forms.Label();
 			this.RequestsButton = new System.Windows.Forms.Button();
-			this.SongSystemButton = new System.Windows.Forms.Button();
 			this.SaveLinkButton = new System.Windows.Forms.Button();
 			this.SongRequestList = new System.Windows.Forms.ListBox();
 			this.MainTabControl = new System.Windows.Forms.TabControl();
-			this.SettingsTab = new System.Windows.Forms.TabPage();
 			this.SongRequestTab = new System.Windows.Forms.TabPage();
+			this.label2 = new System.Windows.Forms.Label();
+			this.CurrentSongDefaultLabel = new System.Windows.Forms.Label();
 			this.RemoveSongFromSecondaryButton = new System.Windows.Forms.Button();
 			this.SkipSongButton = new System.Windows.Forms.Button();
 			this.SecondaryPlaylistManagementTab = new System.Windows.Forms.TabPage();
@@ -79,9 +79,9 @@ namespace TwitchBotManager {
 			this.ConnectionLabel = new System.Windows.Forms.Label();
 			this.CurrentSongRequestLabel = new System.Windows.Forms.Label();
 			this.MainProgressBar = new System.Windows.Forms.ProgressBar();
-			this.VideoStateButton = new System.Windows.Forms.Button();
-			this.VideoONOFFLabel = new System.Windows.Forms.Label();
-			this.CurrentSongDefaultLabel = new System.Windows.Forms.Label();
+			this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.twitchBotToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.outputProcessingMessageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.LoadingBar.SuspendLayout();
 			this.MainTabControl.SuspendLayout();
 			this.SongRequestTab.SuspendLayout();
@@ -91,7 +91,7 @@ namespace TwitchBotManager {
 			// 
 			// AddSongToPlayTextBox
 			// 
-			this.AddSongToPlayTextBox.Location = new System.Drawing.Point(665, 396);
+			this.AddSongToPlayTextBox.Location = new System.Drawing.Point(102, 77);
 			this.AddSongToPlayTextBox.Name = "AddSongToPlayTextBox";
 			this.AddSongToPlayTextBox.Size = new System.Drawing.Size(444, 20);
 			this.AddSongToPlayTextBox.TabIndex = 3;
@@ -110,7 +110,7 @@ namespace TwitchBotManager {
 			// PlayPauseButton
 			// 
 			this.PlayPauseButton.Font = new System.Drawing.Font("Meiryo", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.PlayPauseButton.Location = new System.Drawing.Point(437, 43);
+			this.PlayPauseButton.Location = new System.Drawing.Point(8, 46);
 			this.PlayPauseButton.Name = "PlayPauseButton";
 			this.PlayPauseButton.Size = new System.Drawing.Size(125, 23);
 			this.PlayPauseButton.TabIndex = 5;
@@ -121,7 +121,7 @@ namespace TwitchBotManager {
 			// StopPlaybackButton
 			// 
 			this.StopPlaybackButton.Font = new System.Drawing.Font("Meiryo", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.StopPlaybackButton.Location = new System.Drawing.Point(437, 101);
+			this.StopPlaybackButton.Location = new System.Drawing.Point(270, 46);
 			this.StopPlaybackButton.Name = "StopPlaybackButton";
 			this.StopPlaybackButton.Size = new System.Drawing.Size(125, 23);
 			this.StopPlaybackButton.TabIndex = 6;
@@ -131,7 +131,7 @@ namespace TwitchBotManager {
 			// 
 			// ClearListButton
 			// 
-			this.ClearListButton.Location = new System.Drawing.Point(981, 367);
+			this.ClearListButton.Location = new System.Drawing.Point(552, 75);
 			this.ClearListButton.Name = "ClearListButton";
 			this.ClearListButton.Size = new System.Drawing.Size(128, 23);
 			this.ClearListButton.TabIndex = 7;
@@ -141,7 +141,7 @@ namespace TwitchBotManager {
 			// 
 			// AddLinkButton
 			// 
-			this.AddLinkButton.Location = new System.Drawing.Point(571, 394);
+			this.AddLinkButton.Location = new System.Drawing.Point(8, 75);
 			this.AddLinkButton.Name = "AddLinkButton";
 			this.AddLinkButton.Size = new System.Drawing.Size(88, 23);
 			this.AddLinkButton.TabIndex = 8;
@@ -154,6 +154,7 @@ namespace TwitchBotManager {
 			this.LoadingBar.BackColor = System.Drawing.SystemColors.Control;
 			this.LoadingBar.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
+            this.settingsToolStripMenuItem,
             this.botLoginToolStripMenuItem,
             this.helpToolStripMenuItem});
 			this.LoadingBar.Location = new System.Drawing.Point(0, 0);
@@ -299,7 +300,7 @@ namespace TwitchBotManager {
 			// IncreaseVolumeButton
 			// 
 			this.IncreaseVolumeButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.IncreaseVolumeButton.Location = new System.Drawing.Point(537, 10);
+			this.IncreaseVolumeButton.Location = new System.Drawing.Point(239, 16);
 			this.IncreaseVolumeButton.Name = "IncreaseVolumeButton";
 			this.IncreaseVolumeButton.Size = new System.Drawing.Size(25, 25);
 			this.IncreaseVolumeButton.TabIndex = 11;
@@ -311,7 +312,7 @@ namespace TwitchBotManager {
 			// DecreaseVolumeButton
 			// 
 			this.DecreaseVolumeButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.DecreaseVolumeButton.Location = new System.Drawing.Point(506, 10);
+			this.DecreaseVolumeButton.Location = new System.Drawing.Point(208, 16);
 			this.DecreaseVolumeButton.Name = "DecreaseVolumeButton";
 			this.DecreaseVolumeButton.Size = new System.Drawing.Size(25, 25);
 			this.DecreaseVolumeButton.TabIndex = 12;
@@ -323,7 +324,7 @@ namespace TwitchBotManager {
 			// VolumeLabel
 			// 
 			this.VolumeLabel.AutoSize = true;
-			this.VolumeLabel.Location = new System.Drawing.Point(434, 16);
+			this.VolumeLabel.Location = new System.Drawing.Point(136, 22);
 			this.VolumeLabel.Name = "VolumeLabel";
 			this.VolumeLabel.Size = new System.Drawing.Size(66, 13);
 			this.VolumeLabel.TabIndex = 13;
@@ -331,7 +332,7 @@ namespace TwitchBotManager {
 			// 
 			// RequestsButton
 			// 
-			this.RequestsButton.Location = new System.Drawing.Point(136, 6);
+			this.RequestsButton.Location = new System.Drawing.Point(8, 17);
 			this.RequestsButton.Name = "RequestsButton";
 			this.RequestsButton.Size = new System.Drawing.Size(118, 23);
 			this.RequestsButton.TabIndex = 14;
@@ -339,34 +340,26 @@ namespace TwitchBotManager {
 			this.RequestsButton.UseVisualStyleBackColor = true;
 			this.RequestsButton.Click += new System.EventHandler(this.RequestsButton_Click);
 			// 
-			// SongSystemButton
-			// 
-			this.SongSystemButton.Location = new System.Drawing.Point(12, 6);
-			this.SongSystemButton.Name = "SongSystemButton";
-			this.SongSystemButton.Size = new System.Drawing.Size(118, 23);
-			this.SongSystemButton.TabIndex = 15;
-			this.SongSystemButton.Text = "SongsSystem OFF";
-			this.SongSystemButton.UseVisualStyleBackColor = true;
-			this.SongSystemButton.Click += new System.EventHandler(this.SongSystemButton_Click);
-			// 
 			// SaveLinkButton
 			// 
+			this.SaveLinkButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
 			this.SaveLinkButton.Enabled = false;
-			this.SaveLinkButton.Location = new System.Drawing.Point(571, 367);
+			this.SaveLinkButton.Location = new System.Drawing.Point(943, 45);
 			this.SaveLinkButton.Name = "SaveLinkButton";
-			this.SaveLinkButton.Size = new System.Drawing.Size(154, 23);
+			this.SaveLinkButton.Size = new System.Drawing.Size(165, 23);
 			this.SaveLinkButton.TabIndex = 16;
-			this.SaveLinkButton.Text = "Save Link To Secondary";
+			this.SaveLinkButton.Text = "Save Current Song";
 			this.SaveLinkButton.UseVisualStyleBackColor = true;
 			this.SaveLinkButton.Click += new System.EventHandler(this.SaveLinkButton_Click);
 			// 
 			// SongRequestList
 			// 
+			this.SongRequestList.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
 			this.SongRequestList.FormattingEnabled = true;
-			this.SongRequestList.Location = new System.Drawing.Point(571, 6);
+			this.SongRequestList.Location = new System.Drawing.Point(8, 105);
 			this.SongRequestList.Name = "SongRequestList";
 			this.SongRequestList.SelectionMode = System.Windows.Forms.SelectionMode.None;
-			this.SongRequestList.Size = new System.Drawing.Size(538, 355);
+			this.SongRequestList.Size = new System.Drawing.Size(1098, 316);
 			this.SongRequestList.TabIndex = 17;
 			// 
 			// MainTabControl
@@ -374,7 +367,6 @@ namespace TwitchBotManager {
 			this.MainTabControl.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-			this.MainTabControl.Controls.Add(this.SettingsTab);
 			this.MainTabControl.Controls.Add(this.SongRequestTab);
 			this.MainTabControl.Controls.Add(this.SecondaryPlaylistManagementTab);
 			this.MainTabControl.Controls.Add(this.DebugTab);
@@ -386,26 +378,15 @@ namespace TwitchBotManager {
 			this.MainTabControl.TabIndex = 18;
 			this.MainTabControl.SelectedIndexChanged += new System.EventHandler(this.MainTabControl_TabIndexChanged);
 			// 
-			// SettingsTab
-			// 
-			this.SettingsTab.Location = new System.Drawing.Point(4, 22);
-			this.SettingsTab.Name = "SettingsTab";
-			this.SettingsTab.Size = new System.Drawing.Size(1114, 429);
-			this.SettingsTab.TabIndex = 4;
-			this.SettingsTab.Text = "Settings";
-			this.SettingsTab.UseVisualStyleBackColor = true;
-			// 
 			// SongRequestTab
 			// 
+			this.SongRequestTab.Controls.Add(this.label2);
 			this.SongRequestTab.Controls.Add(this.CurrentSongDefaultLabel);
-			this.SongRequestTab.Controls.Add(this.VideoONOFFLabel);
-			this.SongRequestTab.Controls.Add(this.VideoStateButton);
 			this.SongRequestTab.Controls.Add(this.RemoveSongFromSecondaryButton);
 			this.SongRequestTab.Controls.Add(this.SkipSongButton);
 			this.SongRequestTab.Controls.Add(this.SongRequestList);
 			this.SongRequestTab.Controls.Add(this.SaveLinkButton);
 			this.SongRequestTab.Controls.Add(this.AddSongToPlayTextBox);
-			this.SongRequestTab.Controls.Add(this.SongSystemButton);
 			this.SongRequestTab.Controls.Add(this.RequestsButton);
 			this.SongRequestTab.Controls.Add(this.PlayPauseButton);
 			this.SongRequestTab.Controls.Add(this.VolumeLabel);
@@ -422,21 +403,42 @@ namespace TwitchBotManager {
 			this.SongRequestTab.Text = "Song Request Tab";
 			this.SongRequestTab.UseVisualStyleBackColor = true;
 			// 
+			// label2
+			// 
+			this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+			this.label2.AutoSize = true;
+			this.label2.Location = new System.Drawing.Point(944, 29);
+			this.label2.Name = "label2";
+			this.label2.Size = new System.Drawing.Size(162, 13);
+			this.label2.TabIndex = 23;
+			this.label2.Text = "Secondary Playlist Quick Actions";
+			// 
+			// CurrentSongDefaultLabel
+			// 
+			this.CurrentSongDefaultLabel.AutoSize = true;
+			this.CurrentSongDefaultLabel.Font = new System.Drawing.Font("Microsoft YaHei", 6F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.CurrentSongDefaultLabel.Location = new System.Drawing.Point(6, 3);
+			this.CurrentSongDefaultLabel.Name = "CurrentSongDefaultLabel";
+			this.CurrentSongDefaultLabel.Size = new System.Drawing.Size(87, 11);
+			this.CurrentSongDefaultLabel.TabIndex = 22;
+			this.CurrentSongDefaultLabel.Text = "*Current Song Lable*";
+			// 
 			// RemoveSongFromSecondaryButton
 			// 
+			this.RemoveSongFromSecondaryButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
 			this.RemoveSongFromSecondaryButton.Enabled = false;
-			this.RemoveSongFromSecondaryButton.Location = new System.Drawing.Point(731, 367);
+			this.RemoveSongFromSecondaryButton.Location = new System.Drawing.Point(943, 74);
 			this.RemoveSongFromSecondaryButton.Name = "RemoveSongFromSecondaryButton";
-			this.RemoveSongFromSecondaryButton.Size = new System.Drawing.Size(175, 23);
+			this.RemoveSongFromSecondaryButton.Size = new System.Drawing.Size(165, 23);
 			this.RemoveSongFromSecondaryButton.TabIndex = 19;
-			this.RemoveSongFromSecondaryButton.Text = "Remove Link From Secondary";
+			this.RemoveSongFromSecondaryButton.Text = "Remove Current Song";
 			this.RemoveSongFromSecondaryButton.UseVisualStyleBackColor = true;
 			this.RemoveSongFromSecondaryButton.Click += new System.EventHandler(this.RemoveSongFromSecondaryButton_Click);
 			// 
 			// SkipSongButton
 			// 
 			this.SkipSongButton.Font = new System.Drawing.Font("Meiryo", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.SkipSongButton.Location = new System.Drawing.Point(437, 72);
+			this.SkipSongButton.Location = new System.Drawing.Point(139, 46);
 			this.SkipSongButton.Name = "SkipSongButton";
 			this.SkipSongButton.Size = new System.Drawing.Size(125, 23);
 			this.SkipSongButton.TabIndex = 18;
@@ -468,7 +470,6 @@ namespace TwitchBotManager {
 			// 
 			// WriteUpdatedSongInfoToFileButton
 			// 
-			this.WriteUpdatedSongInfoToFileButton.Enabled = false;
 			this.WriteUpdatedSongInfoToFileButton.Location = new System.Drawing.Point(847, 385);
 			this.WriteUpdatedSongInfoToFileButton.Name = "WriteUpdatedSongInfoToFileButton";
 			this.WriteUpdatedSongInfoToFileButton.Size = new System.Drawing.Size(102, 23);
@@ -491,7 +492,6 @@ namespace TwitchBotManager {
 			// ClaimAllSongsButton
 			// 
 			this.ClaimAllSongsButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-			this.ClaimAllSongsButton.Enabled = false;
 			this.ClaimAllSongsButton.Location = new System.Drawing.Point(1036, 385);
 			this.ClaimAllSongsButton.Name = "ClaimAllSongsButton";
 			this.ClaimAllSongsButton.Size = new System.Drawing.Size(75, 23);
@@ -655,34 +655,29 @@ namespace TwitchBotManager {
 			this.MainProgressBar.Size = new System.Drawing.Size(100, 23);
 			this.MainProgressBar.TabIndex = 21;
 			// 
-			// VideoStateButton
+			// settingsToolStripMenuItem
 			// 
-			this.VideoStateButton.Location = new System.Drawing.Point(260, 6);
-			this.VideoStateButton.Name = "VideoStateButton";
-			this.VideoStateButton.Size = new System.Drawing.Size(118, 23);
-			this.VideoStateButton.TabIndex = 20;
-			this.VideoStateButton.Text = "Video OFF";
-			this.VideoStateButton.UseVisualStyleBackColor = true;
-			this.VideoStateButton.Click += new System.EventHandler(this.VideoStateButton_Click);
+			this.settingsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.twitchBotToolStripMenuItem});
+			this.settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
+			this.settingsToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
+			this.settingsToolStripMenuItem.Text = "Settings";
 			// 
-			// VideoONOFFLabel
+			// twitchBotToolStripMenuItem
 			// 
-			this.VideoONOFFLabel.AutoSize = true;
-			this.VideoONOFFLabel.Location = new System.Drawing.Point(272, 32);
-			this.VideoONOFFLabel.Name = "VideoONOFFLabel";
-			this.VideoONOFFLabel.Size = new System.Drawing.Size(106, 13);
-			this.VideoONOFFLabel.TabIndex = 21;
-			this.VideoONOFFLabel.Text = "Applied to next song.";
+			this.twitchBotToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.outputProcessingMessageToolStripMenuItem});
+			this.twitchBotToolStripMenuItem.Name = "twitchBotToolStripMenuItem";
+			this.twitchBotToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+			this.twitchBotToolStripMenuItem.Text = "Twitch Bot";
 			// 
-			// CurrentSongDefaultLabel
+			// outputProcessingMessageToolStripMenuItem
 			// 
-			this.CurrentSongDefaultLabel.AutoSize = true;
-			this.CurrentSongDefaultLabel.Font = new System.Drawing.Font("Microsoft YaHei", 6F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.CurrentSongDefaultLabel.Location = new System.Drawing.Point(6, 408);
-			this.CurrentSongDefaultLabel.Name = "CurrentSongDefaultLabel";
-			this.CurrentSongDefaultLabel.Size = new System.Drawing.Size(87, 11);
-			this.CurrentSongDefaultLabel.TabIndex = 22;
-			this.CurrentSongDefaultLabel.Text = "*Current Song Lable*";
+			this.outputProcessingMessageToolStripMenuItem.Enabled = false;
+			this.outputProcessingMessageToolStripMenuItem.Name = "outputProcessingMessageToolStripMenuItem";
+			this.outputProcessingMessageToolStripMenuItem.Size = new System.Drawing.Size(221, 22);
+			this.outputProcessingMessageToolStripMenuItem.Text = "Output Processing Message";
+			this.outputProcessingMessageToolStripMenuItem.Click += new System.EventHandler(this.outputProcessingMessageToolStripMenuItem_Click);
 			// 
 			// MainForm
 			// 
@@ -735,7 +730,6 @@ namespace TwitchBotManager {
 		private System.Windows.Forms.Button DecreaseVolumeButton;
 		private System.Windows.Forms.Label VolumeLabel;
 		private System.Windows.Forms.Button RequestsButton;
-		private System.Windows.Forms.Button SongSystemButton;
 		private System.Windows.Forms.Button SaveLinkButton;
 		private System.Windows.Forms.ListBox SongRequestList;
 		private System.Windows.Forms.ToolStripMenuItem openOutputFolderToolStripMenuItem;
@@ -769,11 +763,12 @@ namespace TwitchBotManager {
 		private System.Windows.Forms.Button ClaimSongButton;
 		private System.Windows.Forms.Button ClaimAllSongsButton;
 		private System.Windows.Forms.Button WriteUpdatedSongInfoToFileButton;
-		private System.Windows.Forms.TabPage SettingsTab;
 		private System.Windows.Forms.ToolStripMenuItem reloadSecondarySongListToolStripMenuItem;
-		private System.Windows.Forms.Button VideoStateButton;
 		private System.Windows.Forms.Label CurrentSongDefaultLabel;
-		private System.Windows.Forms.Label VideoONOFFLabel;
+		private System.Windows.Forms.Label label2;
+		private System.Windows.Forms.ToolStripMenuItem settingsToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem twitchBotToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem outputProcessingMessageToolStripMenuItem;
 	}
 }
 

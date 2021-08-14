@@ -55,6 +55,8 @@ namespace TwitchBotManager.Code {
 		public string TwitchOAuth;
 		public string TargetChannel;
 
+		public bool OutputProcessingCommandMessage = true;
+
 		public static string AboutText => "This is ScoredBot, to use !SR," +
 						" insert a link or a command. For example type !SR help for a list of all commands." +
 						" ScoredBot, created and maintained by ScoredOne. Download: https://github.com/ScoredOne/ScoredBot-Repository";
@@ -71,7 +73,7 @@ namespace TwitchBotManager.Code {
 		public event EventHandler<BotCommandContainer> OnRemoveSong;
 		public event EventHandler<BotCommandContainer> OnRemoveAllSongs;
 		public event EventHandler<BotCommandContainer> OnPrintSongList;
-		public event EventHandler<BotCommandContainer> OnPrintUserSongRequest;
+		public event EventHandler<BotCommandContainer> OnPrintUserSongRequests;
 		public event EventHandler<BotCommandContainer> OnSkipSong;
 		public event EventHandler<BotCommandContainer> OnPauseSongRequests;
 		public event EventHandler<BotCommandContainer> OnPlaySongRequests;
@@ -105,7 +107,7 @@ namespace TwitchBotManager.Code {
 					OnPrintSongList.Invoke(null, new BotCommandContainer(SongRequestCommandType.PrintSongList, e.ChatMessage.Username, null));
 				}},
 				{"showmylist", (e, f) => {
-					OnPrintUserSongRequest.Invoke(null, new BotCommandContainer(SongRequestCommandType.PrintUserSongRequest, e.ChatMessage.Username, null));
+					OnPrintUserSongRequests.Invoke(null, new BotCommandContainer(SongRequestCommandType.PrintUserSongRequest, e.ChatMessage.Username, null));
 				}},
 				{"skip", (e, f) => {
 					if (e.ChatMessage.IsModerator) {
@@ -263,6 +265,10 @@ namespace TwitchBotManager.Code {
 			MessageText.RemoveAll(x => string.IsNullOrEmpty(x));
 
 			if (MessageText[0].Equals(SongCommandPrefix, StringComparison.CurrentCultureIgnoreCase)) {
+				if (OutputProcessingCommandMessage) {
+					client.SendMessage(TwitchUsername, @"/me Command Received");
+				}
+
 				if (MessageText.Count > 1) {
 					if (CommandDictionary.ContainsKey(MessageText[1])) {
 						CommandDictionary[MessageText[1]].Invoke(e, MessageText);
@@ -280,15 +286,9 @@ namespace TwitchBotManager.Code {
 			}
 		}
 
-		public async void ReceiveSongRequest(string user, string commandlink) {
-			(string link, NameValueCollection SongData) = await GlobalFunctions.RegexYouTubeLink(commandlink);
-
-			if (!string.IsNullOrEmpty(link) && SongData != null) {
-				if (SongData["errors"] == null) {
-					OnAddSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.AddSong, user, link, SongData));
-				} else {
-					MainForm.StaticPostToDebug("Song request failed... " + link + " :: " + SongData["errors"]);
-				}
+		public void ReceiveSongRequest(string user, string commandlink) {
+			if (GlobalFunctions.GetYouTubeVideoID(commandlink, out string ID)) {
+				OnAddSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.AddSong, user, commandlink));
 			} else {
 				client.SendMessage(TwitchUsername, user + " Your link wasn't recognised, please use links from YouTube.com to add song requests.");
 			}
@@ -301,7 +301,7 @@ namespace TwitchBotManager.Code {
 			}
 		}
 
-		#region ###Subscriber Notifications###
+		#region ### Subscriber Notifications ###
 
 		private void Client_OnNewSubscriber(object sender, OnNewSubscriberArgs e) {
 			//if (e.Subscriber.SubscriptionPlan == SubscriptionPlan.Prime) {
@@ -363,7 +363,7 @@ namespace TwitchBotManager.Code {
 		}
 
 		private void PrintChatToLog() {
-
+			
 		}
 	}
 }

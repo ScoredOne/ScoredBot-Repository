@@ -28,7 +28,8 @@ namespace TwitchBotManager {
 				return;
 			}
 
-			ParentObject.SetTwitchBotLoginDetails(username, oauth, target);
+			// TODO : Secret in twitch login details, also rename oauth to clientid
+			ParentObject.SetTwitchBotLoginDetails(username, oauth, "", target);
 
 			Close();
 		}

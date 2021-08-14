@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -11,19 +15,12 @@ using YoutubeDLSharp.Metadata;
 namespace TwitchBotManager.Code.Classes {
 	public static class GlobalFunctions {
 
-		private readonly static YoutubeDL YoutubeDLWorker;
-
-		static GlobalFunctions() {
-			// TODO : add optional file path instillation - Disable related functionality if error
-			YoutubeDLWorker = new YoutubeDL(10) { // Python restricted to a maximum of ~100
-				YoutubeDLPath = Directory.GetCurrentDirectory() + @"\youtube-dl\youtube-dl.exe",
-				FFmpegPath = Directory.GetCurrentDirectory() + @"\ffmpeg\ffmpeg.exe"
-			};
-		}
+		static GlobalFunctions() {}
 
 		public static void CheckAndCreateOutputDirectoryFiles() {
 			Directory.CreateDirectory(Directory.GetCurrentDirectory() + @"\Outputs");
 			Directory.CreateDirectory(Directory.GetCurrentDirectory() + @"\Outputs\ChatHistory");
+			Directory.CreateDirectory(Directory.GetCurrentDirectory() + @"\Outputs\CachedSongs");
 
 			if (!File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\LatestFollowSubBits.txt")) {
 				File.Create(Directory.GetCurrentDirectory() + @"\Outputs\LatestFollowSubBits.txt").Close();
@@ -43,18 +40,19 @@ namespace TwitchBotManager.Code.Classes {
 			if (!File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\MediaVolume.txt")) {
 				File.Create(Directory.GetCurrentDirectory() + @"\Outputs\MediaVolume.txt").Close();
 			}
+			
 		}
 
-		public static (string, string, string) LoadLoginFromFile() {
+		public static (string, string, string, string) LoadLoginFromFile() {
 			if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\SavedLoginInfo.txt")) {
 				string[] input = File.ReadAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SavedLoginInfo.txt");
 				switch (input.Length) {
 					case 0:
 						break;
 					case 2:
-						return (input[0], input[1], "");
+						return (input[0], input[1], "", "");
 					case 3:
-						return (input[0], input[1], input[2]);
+						return (input[0], input[1], "", input[2]);
 					default:
 						File.WriteAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SavedLoginInfo.txt", new string[] { });
 						MessageBox.Show("The file containing the login detail seems to have corrupted, the file has been reset.", "Error loading Login Details", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -62,7 +60,7 @@ namespace TwitchBotManager.Code.Classes {
 				}
 			}
 
-			return ("", "", "");
+			return ("", "", "", "");
 		}
 
 		public static int LoadMediaPlayerVolume() {
@@ -104,56 +102,18 @@ namespace TwitchBotManager.Code.Classes {
 			}
 		}
 
-		public async static Task<(string Link, NameValueCollection Details)> RegexYouTubeLink(string link) {
-			link = link.Split('&')[0];
-			if (!link.Contains("https://")) {
-				link = "https://" + link;
-			}
+		public static bool GetYouTubeVideoID(string link, out string ID) {
+			string linkCopy = link.Split('&')[0];
 
-			Match Regexmatch = new Regex(@"youtu(?:\.be|be\.com)/(?:.*v(?:/|=)|(?:.*/)?)([a-zA-Z0-9-_]+)").Match(link);
+			Match Regexmatch = new Regex(@"youtu(?:\.be|be\.com)/(?:.*v(?:/|=)|(?:.*/)?)([a-zA-Z0-9-_]+)").Match(linkCopy);
+
 			if (Regexmatch.Success) {
-
-				string youtubeMatch = Regexmatch.Groups[1].Value;
-
-				RunResult<VideoData> Youtubedata = await YoutubeDLWorker.RunVideoDataFetch("https://www.youtube.com/watch?v=" + youtubeMatch
-					, overrideOptions: new YoutubeDLSharp.Options.OptionSet() {
-						DumpJson = true,
-						DumpSingleJson = true,
-						HlsPreferNative = true,
-						IgnoreConfig = true,
-						NoPlaylist = true,
-						SkipDownload = true,
-						GetThumbnail = false,
-						ListThumbnails = false,
-						WriteAllThumbnails = false,
-						WriteThumbnail = false
-					});
-
-				NameValueCollection valueCollection = null;
-				if (Youtubedata != null && Youtubedata.Success) {
-					valueCollection = new NameValueCollection {
-						{ "title", Youtubedata.Data.Title },
-						{ "lengthSeconds", Youtubedata.Data.Duration.ToString() }
-					};
-				} else {
-					if (Youtubedata == null) {
-						Console.WriteLine("https://www.youtube.com/watch?v=" + youtubeMatch + " Crashed Out");
-					} else {
-						string errors = "";
-						foreach (string error in Youtubedata.ErrorOutput) {
-							errors += error + " :: ";
-							Console.WriteLine(error);
-						}
-						valueCollection = new NameValueCollection {
-							{ "errors", errors }
-						};
-					}
-				}
-
-				return (link, valueCollection);
+				ID = Regexmatch.Groups[1].Value;
+				return true;
+			} else {
+				ID = null;
+				return false;
 			}
-
-			return (null, null);
 		}
 
 		/// <summary>
@@ -183,10 +143,51 @@ namespace TwitchBotManager.Code.Classes {
 		/// </summary>
 		/// <param name="action"></param>
 		/// <param name="controls"></param>
-		public static void ExecuteMultipleThreadSafeActions<T>(Action<T> action, params T[] controls) where T : Control {
+		public static void ExecuteThreadSafeActionToMultiple<T>(Action<T> action, params T[] controls) where T : Control {
 			foreach (T control in controls) {
 				control.ThreadSafeAction(action);
 			}
+		}
+
+		public static void SafeInvoke<T>(this EventHandler<T> handler, object self, T paramater) {
+			if (handler == null) {
+				return;
+			} else {
+				handler.Invoke(self, paramater);
+			}
+		}
+
+		public static void SafeInvoke(this EventHandler handler, object self, EventArgs paramater) {
+			if (handler == null) {
+				return;
+			} else {
+				handler.Invoke(self, paramater);
+			}
+		}
+
+		public static string MergeList(this IEnumerable<string> list, char conjoiningChar) {
+			int count = list.Count();
+			if (count == 0) {
+				return "";
+			} else if (count == 1) {
+				return list.First();
+			}
+			string output = "";
+			for (int x = 0; x < count; x++) {
+				output += list.ElementAt(x);
+				if (x < count - 1) {
+					output += conjoiningChar;
+				}
+			}
+			return output;
+		}
+
+		public static NameValueCollection ParseDictionaryToNVC(Dictionary<string,string> dic) {
+			NameValueCollection valueCollection = new NameValueCollection(dic.Count);
+			foreach (KeyValuePair<string, string> pair in dic) {
+				valueCollection.Add(pair.Key, pair.Value);
+			}
+			return valueCollection;
 		}
 	}
 }

@@ -1,4 +1,20 @@
-﻿
+﻿///////////// Version 0.2.1 : The Last Song Request overhaul ///////////////////////////////////////////////////////
+
+As a last resort to stop stuttering/buffering/songs not loading, I have completely overhauled how the song request system workes.
+Instead of storing song data then streaming the video from the stored youtube link, the bot now downloads and caches all secondary songs
+and the next few song requests the bot will play.
+The bot will distinguish between songs already cached and songs it needs to download ready.
+Because new requests into an empty list can take a few seconds, I added a message to output when a message command is received.
+This can be disabled in the new setting tab.
+Areas will be untested so be careful with areas of the song system, however they should work fine.
+
+If the requests dont work smoothly now then I dont know what to do or whats up with it, this has been so frustating that I'm taking a break from this
+for a few weeks, had to work so hard to move everything over to the new system that I need a break and do something else.
+If you find a bug let me know and I will fix it as soon as I can.
+
+After this will be more command and chat interaction stuff when I get back to work on this, also probably some customization stuff for the bot in settings
+but we will see when I start again.
+
 ///////////// Version 0.2 : get_video_info Nightmare... ///////////////////////////////////////////////////////
 
 So "https://www.youtube.com/get_video_info?video_id=" went offline for good suddenly it seems, the whole backbone of the song system...
@@ -10,8 +26,8 @@ On a positive side, this new system allows for Audio only downloads, so that sys
 Important notes however:
 - 86x support has been removed due to FFMPEG version limitations.
 - Currently for the song loader, some songs are going missing when being added to the lists, so writing the updated info to the song file has been removed
-to prevent saved songs being lost.
-- Size of the download song request has not been measured against the old system, please take care with downloads.
+to prevent saved songs being lost. (Fixed)
+- Size of the download song request has not been measured against the old system, please take care with downloads. (Fixed)
 - Currently due to get_video_info going down youtube-dl has posted that age restricted content currently doesnt work. 
 (There are work arounds but we might as well see if they can fix it soon anyway)
 
@@ -29,29 +45,5 @@ to prevent saved songs being lost.
 - Debug tab displaying all caught actions.
 - Twitch login form.
 - Support to log into a targeted account. (untested)
-
-## Version 0.2 Plans ##
-- Version checker with the git version 
-	- small label indicating a newer version is available 
-	- git link added to about.
-- Bot chat interactions tab.
-	- Bot message toggleable/customisable messages.
-	- Small Custom commands.
-	- Song request song length limit.
-- Live chat tab
-	- Filter by user type (MOD, VIP ext).
-	- User history. (current + past sessions)
-	- Moderation capabilities.
-	- Post to chat from bot.
-- TwitchBot.cs refactors.
-	- Clean up Client_OnMessageReceived.
-	- Assesed if SongRequestCommandType is even needed.
-	- Clean up unused segments.
-
-## Future Versions Plans ##
-- Twitch API interactions running.
-- Bot operable from both chat and twitch wispers.
-- Song Requests have a audio only option to reduce download and system requirements. (libvlc is currently taking up over 300MB of the project, ~150 for both x86 and x64)
-- Download and store song requests to save bandwidth.
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
