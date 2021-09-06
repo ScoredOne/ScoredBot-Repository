@@ -437,14 +437,13 @@ namespace TwitchBotManager.Code.Classes {
 
 				if (CurrentSong.LocalFile && !CurrentSong.AudioCached()) {
 					throw new Exception($"Local file: {CurrentSong.DirLocation} Not found.");
-				}
-
-				if (!CurrentSong.AudioCached()) {
+				} else if (!CurrentSong.AudioCached()) {
 					await CurrentSong.GetYouTubeAudioData(YoutubeDLWorker);
 				}
 
-				//media = new Media(_libVLC, CurrentSong.DirLocation, FromType.FromPath);
-				//await media.Parse();
+				if (!CurrentSong.AudioCached()) {
+					throw new Exception($"Song : {CurrentSong.Title} Failed to find Cache.");
+				}
 
 				VLCPlayer.Media = media = new Media(_libVLC, CurrentSong.DirLocation);
 				await VLCPlayer.Media.Parse();
@@ -664,27 +663,32 @@ namespace TwitchBotManager.Code.Classes {
 		/// When a song ends, the cache needs to be updated
 		/// </summary>
 		private async Task ManageCacheAfterMediaEnd() {
-			if (RequestsCacheAmount.HasValue) {
-				ToCacheVale = RequestsCacheAmount > Songlist.Count ? Songlist.Count : RequestsCacheAmount.Value;
-				IEnumerable<SongDataContainer> TakenList = Songlist.Take(ToCacheVale);
+			try {
+				if (RequestsCacheAmount.HasValue) {
+					ToCacheVale = RequestsCacheAmount > Songlist.Count ? Songlist.Count : RequestsCacheAmount.Value;
+					IEnumerable<SongDataContainer> TakenList = Songlist.Take(ToCacheVale);
 
-				if (!TakenList.Contains(CurrentSong) && !SecondarySongPlaylist.ContainsKey(CurrentSong)) {
-					media.Dispose();
-					await CurrentSong.DeleteCache();
-				}
+					if (!TakenList.Contains(CurrentSong) && !SecondarySongPlaylist.ContainsKey(CurrentSong)) {
+						media.Dispose();
+						await CurrentSong.DeleteCache();
+					}
 
-				foreach (SongDataContainer songData in TakenList) {
-					if (!songData.AudioCached()) {
-						await songData.GetYouTubeAudioData(YoutubeDLWorker);
+					foreach (SongDataContainer songData in TakenList) {
+						if (!songData.AudioCached()) {
+							await songData.GetYouTubeAudioData(YoutubeDLWorker);
+						}
+					}
+				} else {
+					foreach (SongDataContainer songData in Songlist) {
+						if (!songData.AudioCached()) {
+							await songData.GetYouTubeAudioData(YoutubeDLWorker);
+						}
 					}
 				}
-			} else {
-				foreach (SongDataContainer songData in Songlist) {
-					if (!songData.AudioCached()) {
-						await songData.GetYouTubeAudioData(YoutubeDLWorker);
-					}
-				}
+			} catch (Exception e) {
+				MainForm.StaticPostToDebug($"ManageCacheAfterMediaEnd ERROR caught and recovered: {e.Message}");
 			}
+
 		}
 
 		/// <summary>
@@ -850,12 +854,13 @@ namespace TwitchBotManager.Code.Classes {
 		}
 
 		public bool RemoveSecondaryAtIndex(int index, out string output) {
-			if (SecondarySongPlaylist.Count >= index) {
+			if (SecondarySongPlaylist.Count <= index) {
 				output = "ERROR: Index Provided out of range of Secondary Playlist.";
 				return false;
 			}
 
 			SongDataContainer song = SecondarySongPlaylist.ElementAt(index).Key;
+			SecondarySongPlaylist.Remove(song);
 			if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt")) {
 				List<string> songs = File.ReadAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt").ToList();
 
@@ -877,12 +882,13 @@ namespace TwitchBotManager.Code.Classes {
 		}
 
 		public bool RemoveBrokenAtIndex(int index, out string output) {
-			if (BrokenLinklist.Count >= index) {
+			if (BrokenLinklist.Count <= index) {
 				output = "ERROR: Index Provided out of range of Secondary Playlist.";
 				return false;
 			}
 
 			SongDataContainer song = BrokenLinklist[index];
+			BrokenLinklist.Remove(song);
 			if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt")) {
 				List<string> songs = File.ReadAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt").ToList();
 
@@ -912,6 +918,7 @@ namespace TwitchBotManager.Code.Classes {
 				SongDataContainer song = SongDataContainer.CreateNewContainer(address, requester, local: local);
 				if (File.Exists(address)) {
 					SecondarySongPlaylist.Add(song, false);
+					WriteSingleSongToFile(song);
 					return true;
 				} else {
 					MainForm.StaticPostToDebug($"Local Address: {address} : Invalid. File not found.");
@@ -926,6 +933,7 @@ namespace TwitchBotManager.Code.Classes {
 				SongDataContainer song = await SongDataContainer.CreateNewContainer(address, requester, YoutubeDLWorker, true);
 				if (song.PingValid) {
 					SecondarySongPlaylist.Add(song, false);
+					WriteSingleSongToFile(song);
 					return true;
 				} else {
 					MainForm.StaticPostToDebug($"YouTube link: {address} : Invalid. Ping returned Errors.");

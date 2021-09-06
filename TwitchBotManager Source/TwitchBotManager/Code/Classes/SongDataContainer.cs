@@ -250,7 +250,11 @@ namespace TwitchBotManager.Code.Classes {
 			}
 
 			if (GlobalFunctions.GetYouTubeVideoID(Link, out string youtubeMatch)) {
-				RunResult<VideoData> Youtubedata = await YoutubeDLWorker.RunVideoDataFetch("https://www.youtube.com/watch?v=" + youtubeMatch
+				RunResult<VideoData> Youtubedata = null;
+				Exception exception = null;
+
+				try {
+					Youtubedata = await YoutubeDLWorker.RunVideoDataFetch("https://www.youtube.com/watch?v=" + youtubeMatch
 					, overrideOptions: new YoutubeDLSharp.Options.OptionSet() {
 						DumpJson = true,
 						DumpSingleJson = true,
@@ -263,8 +267,14 @@ namespace TwitchBotManager.Code.Classes {
 						WriteAllThumbnails = false,
 						WriteThumbnail = false
 					});
+				} catch (Exception e) {
+					exception = e;
+				}
 
-				if (Youtubedata != null && Youtubedata.Success) {
+				if (exception != null) {
+					MainForm.StaticPostToDebug($"{Link} : Error attempting to download song information. : {exception.Message}");
+					LastPingFailed = true;
+				} else if (Youtubedata != null && Youtubedata.Success) {
 					Title = Youtubedata.Data.Title;
 					LengthSec = (int)Youtubedata.Data.Duration;
 					LastValidPing = DateTime.Now;
@@ -272,7 +282,7 @@ namespace TwitchBotManager.Code.Classes {
 					MainForm.StaticPostToDebug($"Secondary Song Info Downloaded... {Title}");
 				} else {
 					if (Youtubedata == null) {
-						MainForm.StaticPostToDebug("https://www.youtube.com/watch?v=" + youtubeMatch + " Crashed Out");
+						MainForm.StaticPostToDebug($"https://www.youtube.com/watch?v={youtubeMatch} : YoutubeDLWorker Crashed Out");
 					} else {
 						string errors = "";
 						foreach (string error in Youtubedata.ErrorOutput) {
@@ -317,9 +327,19 @@ namespace TwitchBotManager.Code.Classes {
 				if (AudioCached()) {
 					File.Delete(DirLocation);
 				}
-				RunResult<string> Youtubedata = await YoutubeDLWorker.RunAudioDownload("https://www.youtube.com/watch?v=" + ID, type);
+				RunResult<string> Youtubedata = null;
+				Exception exception = null;
 
-				if (Youtubedata.Success) {
+				try {
+					Youtubedata = await YoutubeDLWorker.RunAudioDownload("https://www.youtube.com/watch?v=" + ID, type);
+				} catch (Exception e) {
+					exception = e;
+				}
+
+				if (exception != null) {
+					MainForm.StaticPostToDebug($"{Title} : Error attempting to download song data. : {exception.Message}");
+					LastPingFailed = true;
+				} else if (Youtubedata != null && Youtubedata.Success) {
 					string extension = $".{type.ToString().ToLower()}";
 					string filenameTitle = Title;
 					char[] invalidchars = Path.GetInvalidFileNameChars();
@@ -328,18 +348,23 @@ namespace TwitchBotManager.Code.Classes {
 					}
 					string newFilename = $"{Path.GetDirectoryName(Youtubedata.Data)}\\{ID} - {filenameTitle}{extension}";
 
-					bool check;
-					do { // Youtube-dl might still be processing the file so wait until it is created then rename
-						check = true;
-						IEnumerable<string> directories = Directory.GetFiles($"{Path.GetDirectoryName(Youtubedata.Data)}\\");
-						foreach (string dir in directories) {
-							if (dir.Contains(ID) && dir.Contains(extension)) {
-								File.Move(dir, newFilename);
-								check = false;
-								break;
+					try {
+						bool check;
+						do { // Youtube-dl might still be processing the file so wait until it is created then rename
+							check = true;
+							IEnumerable<string> directories = Directory.GetFiles($"{Path.GetDirectoryName(Youtubedata.Data)}\\");
+							foreach (string dir in directories) {
+								if (dir.Contains(ID) && dir.Contains(extension)) {
+									File.Move(dir, newFilename);
+									check = false;
+									break;
+								}
 							}
-						}
-					} while (check);
+							await Task.Delay(1000);
+						} while (check);
+					} catch (Exception e) {
+						MainForm.StaticPostToDebug($"Rename function failed on {Title} : {e.Message}");
+					}
 
 					string successMessage = $"Audio Download of {Link} Successfull: {newFilename}";
 
@@ -351,10 +376,13 @@ namespace TwitchBotManager.Code.Classes {
 					LastValidPing = DateTime.Now;
 					LastPingFailed = false;
 				} else {
-					string errorMessage = $"GetYouTubeAudioData using link: {Link} Failed, Downloader encountered errors.";
-					MainForm.StaticPostToDebug(errorMessage);
-
-					foreach (string errors in Youtubedata.ErrorOutput) {
+					if (Youtubedata == null) {
+						MainForm.StaticPostToDebug($"GetYouTubeAudioData using link: {Link} Failed, Downloader encountered errors.");
+					} else {
+						string errors = "";
+						foreach (string error in Youtubedata.ErrorOutput) {
+							errors += error + " :: ";
+						}
 						MainForm.StaticPostToDebug(errors);
 					}
 
@@ -374,6 +402,7 @@ namespace TwitchBotManager.Code.Classes {
 		public async Task DeleteCache() {
 			if (AudioCached()) {
 				bool pass = false;
+				int attempts = 0;
 				do {
 					try {
 						File.Delete(DirLocation);
@@ -382,7 +411,7 @@ namespace TwitchBotManager.Code.Classes {
 					} catch {
 						await Task.Delay(500);
 					}
-				} while (!pass);
+				} while (!pass && ++attempts < 100);
 			}
 		}
 	}

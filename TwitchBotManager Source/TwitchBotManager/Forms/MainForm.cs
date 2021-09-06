@@ -26,9 +26,15 @@ using Timer = System.Windows.Forms.Timer; // System.Threading; conflict
 // Option to load songs on run
 // Option to load songs raw (link only)
 
+/*
+ - After lots of random continus requests it hard crashed (need to put try catches in every area of possible hard crash areas)
+ - Song check if in secondary currently requires exact link instead of cleaning then checking (eg &t=12 [time stamp] makes it think the song isnt in the store)
+ */
+
 /* Song Request Work:
 - Resort list into new catigories, (Pings work + song cached) - (Pings dont work + song cached) - (local songs) - (pings dont work + song not cached)
 - Combine first 3 lists ^ into a playlist to play from
+- Dynamic cache addresses / Update directories of cache if whole project moves
 */
 
 /* TODO:
@@ -39,8 +45,8 @@ using Timer = System.Windows.Forms.Timer; // System.Threading; conflict
 - Follower only request mode
 - User chat tracker
 - Whisper functionality for mods
-- 
-- 
+- Timed actions
+- Auto Ads
 - 
 - 
 - 
@@ -81,6 +87,8 @@ namespace TwitchBotManager {
 		public MainForm() {
 			InitializeComponent();
 
+			AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+
 			Core.Initialize();
 
 			KeyPreview = true;
@@ -112,6 +120,10 @@ namespace TwitchBotManager {
 			Show();
 
 			Initialized = true;
+		}
+
+		private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e) {
+			File.WriteAllText(Directory.GetCurrentDirectory() + @"\Outputs\CRASH(" + DateTime.Now.ToString("yyyy-MM-dd_hh-mmtt") + ").txt", ((Exception)e.ExceptionObject).StackTrace);
 		}
 
 		private void Form1_Load(object sender, EventArgs e) {
