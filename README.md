@@ -2,7 +2,7 @@
  ScoredBot Twitch bot. Created by ScoredOne.
  
  #### About
- - Currently version 0.2.2
+ - Currently version 0.2.3
  - Uses LibVLC, youtube-dl and FFMPEG to download and manage song requests.
  - Made to be a dedicated bot for a streamer to manage all aspects of their stream. From song requests, deep chat management and beyond.
  
