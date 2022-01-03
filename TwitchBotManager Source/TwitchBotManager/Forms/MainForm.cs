@@ -50,7 +50,7 @@ using Timer = System.Windows.Forms.Timer; // System.Threading; conflict
 - 
 - 
 - 
-- 
+- https://stackoverflow.com/questions/453161/how-can-i-save-application-settings-in-a-windows-forms-application
 */
 
 namespace TwitchBotManager {
@@ -70,6 +70,9 @@ namespace TwitchBotManager {
 		public (string UserName, string OAuth, string Secret, string Target) TwitchBotLoginDetails { get; private set; } // UserName, oauth:xxxxxxxxxxxxxxxxxxxxxxxxxxxxx, TargetChannel
 
 		private SongRequestManager songRequestManager;
+
+		private List<NameValueCollection> SecondarySongs;
+		private List<NameValueCollection> BrokenSongs;
 
 		private static List<string> StaticDebugOutQueue = new List<string>();
 		public static void StaticPostToDebug(string message) {
@@ -229,7 +232,7 @@ namespace TwitchBotManager {
 			RequestsButton.Text = songRequestManager.TakingSongRequests ? "Requests ON" : "Requests OFF";
 
 			// TODO : Change
-			RetryAllBrokenSongButton.Enabled = songRequestManager.GetBrokenPlaylist().Count > 0;
+			RetryAllBrokenSongButton.Enabled = songRequestManager.GetBrokenPlaylist().Count() > 0;
 
 			// StaticPostToDebug
 			if (StaticDebugOutQueue.Count > 0) {
@@ -334,6 +337,7 @@ namespace TwitchBotManager {
 				}
 			}
 		}
+
 		private void CurrentDetailsToolButton_CheckedChanged(object sender, EventArgs e) {
 			UserNameToolLabel.Visible =
 			OAuthToolLabel.Visible =
@@ -371,7 +375,6 @@ namespace TwitchBotManager {
 			// TODO : Update reloadSecondarySongListToolStripMenuItem_Click
 
 			GlobalFunctions.ExecuteThreadSafeActionToMultiple<Control>(x => x.Enabled = false,
-				RemoveBrokenSongButton,
 				RetryBrokenSongButton,
 				AddSecondarySongButton,
 				RemoveSecondarySongButton,
@@ -602,37 +605,101 @@ namespace TwitchBotManager {
 		#region ### SECONDARY SONG MANAGER TAB ###
 
 		public void UpdateSecPlaylistTabLists() {
-			Dictionary<int, string> Secondary = songRequestManager.GetSecondaryPlaylist();
-			Dictionary<int, string> Broken = songRequestManager.GetBrokenPlaylist();
+			if (!songRequestManager.IsLoading) {
+				if (!string.IsNullOrEmpty(SearchInputBox.Text) && (SongTitleCheckBox.Checked || YTCheckBox.Checked || RequesterCheckBox.Checked)) {
+					SecondarySongs = songRequestManager.GetSecondaryPlaylist().Where(e => {
+						if (SongTitleCheckBox.Checked) {
+							return e.Get(nameof(SongDataContainer.Title)).ToLower().Contains(SearchInputBox.Text.ToLower());
+						}
+						if (YTCheckBox.Checked) {
+							return e.Get(nameof(SongDataContainer.Link)).Contains(SearchInputBox.Text);
+						}
+						if (RequesterCheckBox.Checked) {
+							return e.Get(nameof(SongDataContainer.OriginalRequester)).ToLower().Contains(SearchInputBox.Text.ToLower());
+						}
+						return false;
+					}).ToList();
+					BrokenSongs = songRequestManager.GetBrokenPlaylist().Where(e => {
+						if (SongTitleCheckBox.Checked) {
+							return e.Get(nameof(SongDataContainer.Title)).ToLower().Contains(SearchInputBox.Text.ToLower());
+						}
+						if (YTCheckBox.Checked) {
+							return e.Get(nameof(SongDataContainer.Link)).Contains(SearchInputBox.Text);
+						}
+						if (RequesterCheckBox.Checked) {
+							return e.Get(nameof(SongDataContainer.OriginalRequester)).ToLower().Contains(SearchInputBox.Text.ToLower());
+						}
+						return false;
+					}).ToList();
+				} else {
+					SecondarySongs = songRequestManager.GetSecondaryPlaylist();
+					BrokenSongs = songRequestManager.GetBrokenPlaylist();
+				}
 
-			if (Secondary.Count > 0) {
+				int count = 0;
+				if (SecondarySongs.Count > 0) {
+					LoadedSongsListBox.ThreadSafeAction(e => {
+						e.DataSource = SecondarySongs.Select(f => $"#{++count}. {f.Get(nameof(SongDataContainer.Title))}" +
+						$"{(!string.IsNullOrEmpty(f.Get(nameof(SongDataContainer.LastPingFailed))) && bool.Parse(f.Get(nameof(SongDataContainer.LastPingFailed))) ? " - #PING FAILED / CACHE INTACT#" : "")}").ToList();
+					});
+				} else {
+					LoadedSongsListBox.ThreadSafeAction(e => {
+						e.DataSource = new List<string>();
+					});
+				}
+
+				count = 0;
+				if (BrokenSongs.Count > 0) {
+					BrokenSongsListBox.ThreadSafeAction(e => {
+						e.DataSource = BrokenSongs.Select(f => $"#{++count}. {f.Get(nameof(SongDataContainer.Title))}").ToList();
+					});
+				} else {
+					BrokenSongsListBox.ThreadSafeAction(e => {
+						e.DataSource = new List<string>();
+					});
+				}
+			} else {
 				LoadedSongsListBox.ThreadSafeAction(e => {
-					e.DataSource = Secondary.Select(f => $"{f.Key + 1}. {f.Value}").ToList();
+					e.DataSource = new List<string>();
 				});
-			}
-
-			if (Broken.Count > 0) {
 				BrokenSongsListBox.ThreadSafeAction(e => {
-					e.DataSource = Broken.Select(f => $"{f.Key + 1}. {f.Value}").ToList();
+					e.DataSource = new List<string>();
 				});
 			}
 		}
 
 		private void RemoveSecondarySongButton_Click(object sender, EventArgs e) {
-			if (songRequestManager.RemoveSecondaryAtIndex(LoadedSongsListBox.SelectedIndex, out string output)) {
-				UpdateSecPlaylistTabLists();
+			switch (SongListTabs.SelectedIndex) {
+				case 0:
+					if (LoadedSongsListBox.SelectedIndex < SecondarySongs.Count && LoadedSongsListBox.SelectedIndex != -1) {
+						string value = SecondarySongs[LoadedSongsListBox.SelectedIndex].Get(nameof(SongDataContainer.UniqueSystemID));
+						if (!string.IsNullOrEmpty(value)) {
+							songRequestManager.RemoveSongByGenID(value);
+							UpdateSecPlaylistTabLists();
+						}
+					}
+					break;
+				case 1:
+					if (BrokenSongsListBox.SelectedIndex < BrokenSongs.Count && BrokenSongsListBox.SelectedIndex != -1) {
+						string value = BrokenSongs[BrokenSongsListBox.SelectedIndex].Get(nameof(SongDataContainer.UniqueSystemID));
+						if (!string.IsNullOrEmpty(value)) {
+							songRequestManager.RemoveSongByGenID(value);
+							UpdateSecPlaylistTabLists();
+						}
+					}
+					break;
 			}
-			PostToDebug.Invoke(output);
+
 		}
 
 		private async void AddSecondarySongButton_Click(object sender, EventArgs e) {
-			GlobalFunctions.ExecuteThreadSafeActionToMultiple(x => x.Enabled = false, RemoveBrokenSongButton, RetryBrokenSongButton, AddSecondarySongButton, RemoveSecondarySongButton, ClaimSongButton, ClaimAllSongsButton, WriteUpdatedSongInfoToFileButton);
+			GlobalFunctions.ExecuteThreadSafeActionToMultiple(x => x.Enabled = false, RetryBrokenSongButton, AddSecondarySongButton, RemoveSecondarySongButton, ClaimSongButton, ClaimAllSongsButton, WriteUpdatedSongInfoToFileButton);
 
 			string link = SecondaryTextBoxAddField.Text.Trim();
 			string requester = TwitchBotLoginDetails.UserName;
 
 			if (string.IsNullOrEmpty(requester)) {
-				requester = Interaction.InputBox("Twitch Login currently empty, please insert a requester name.", "Requester field needed.", "#NOT PROVIDED#");
+				requester = Interaction.InputBox("Twitch Login currently empty, please insert a requester name for the song.", "Requester field required.", "#NOT PROVIDED#");
 			}
 
 			Match match = new Regex(@"youtu(?:\.be|be\.com)/(?:.*v(?:/|=)|(?:.*/)?)([a-zA-Z0-9-_]+)").Match(link);
@@ -643,18 +710,7 @@ namespace TwitchBotManager {
 				MessageBox.Show("Link does not appear to be a YouTube link, please check link and try again.", "Invalid Input", MessageBoxButtons.OK, MessageBoxIcon.Error);
 			}
 
-			GlobalFunctions.ExecuteThreadSafeActionToMultiple(x => x.Enabled = true, RemoveBrokenSongButton, RetryBrokenSongButton, AddSecondarySongButton, RemoveSecondarySongButton, ClaimSongButton, ClaimAllSongsButton, WriteUpdatedSongInfoToFileButton);
-		}
-
-		private void RemoveBrokenSongButton_Click(object sender, EventArgs e) {
-			GlobalFunctions.ExecuteThreadSafeActionToMultiple(x => x.Enabled = false, RemoveBrokenSongButton, RetryBrokenSongButton, AddSecondarySongButton, RemoveSecondarySongButton, ClaimSongButton, ClaimAllSongsButton, WriteUpdatedSongInfoToFileButton);
-
-			if (songRequestManager.RemoveBrokenAtIndex(LoadedSongsListBox.SelectedIndex, out string output)) {
-				UpdateSecPlaylistTabLists();
-			}
-			PostToDebug.Invoke(output);
-
-			GlobalFunctions.ExecuteThreadSafeActionToMultiple(x => x.Enabled = true, RemoveBrokenSongButton, RetryBrokenSongButton, AddSecondarySongButton, RemoveSecondarySongButton, ClaimSongButton, ClaimAllSongsButton, WriteUpdatedSongInfoToFileButton);
+			GlobalFunctions.ExecuteThreadSafeActionToMultiple(x => x.Enabled = true, RetryBrokenSongButton, RemoveSecondarySongButton, ClaimSongButton, ClaimAllSongsButton, WriteUpdatedSongInfoToFileButton);
 		}
 
 		private async void RetryBrokenSongButton_Click(object sender, EventArgs e) {
@@ -676,20 +732,34 @@ namespace TwitchBotManager {
 		}
 
 		private void LoadedSongsListBox_SelectedIndexChanged(object sender, EventArgs e) {
-			GlobalFunctions.ExecuteThreadSafeActionToMultiple(x => x.Enabled = LoadedSongsListBox.SelectedIndex != -1, RemoveSecondarySongButton, ClaimSongButton);
-			GlobalFunctions.ExecuteThreadSafeActionToMultiple(x => x.Enabled = false, RemoveBrokenSongButton, RetryBrokenSongButton, AddSecondarySongButton);
+			ClaimSongButton.ThreadSafeAction(e => e.Enabled = LoadedSongsListBox.SelectedIndex != -1);
 			BrokenSongsListBox.ThreadSafeAction(x => x.SelectedIndex = -1);
 			if (LoadedSongsListBox.SelectedIndex != -1 && songRequestManager.GetFromSecondaryByIndex(LoadedSongsListBox.SelectedIndex, out NameValueCollection data)) {
-				SecondaryTextBoxAddField.Text = data["Link"];
+				SecondaryTextBoxAddField.Text = data.Get(nameof(SongDataContainer.Link));
+				SongDetailsListBox.DataSource = new List<string>() {
+					$"Link:\t\t{data.Get(nameof(SongDataContainer.Link))}",
+					$"Title:\t\t{data.Get(nameof(SongDataContainer.Title))}",
+					$"Original Requester:\t{data.Get(nameof(SongDataContainer.OriginalRequester))}",
+					$"Length:\t\t{data.Get(nameof(SongDataContainer.LengthInTime))}",
+					$"Ping Valid:\t{data.Get(nameof(SongDataContainer.PingValid))}",
+					$"Last Valid Ping:\t{data.Get(nameof(SongDataContainer.LastValidPing))}",
+				};
 			}
 		}
 
 		private void BrokenSongsListBox_SelectedIndexChanged(object sender, EventArgs e) {
-			GlobalFunctions.ExecuteThreadSafeActionToMultiple(x => x.Enabled = false, RemoveSecondarySongButton, AddSecondarySongButton);
-			GlobalFunctions.ExecuteThreadSafeActionToMultiple(x => x.Enabled = BrokenSongsListBox.SelectedIndex != -1, RemoveBrokenSongButton, RetryBrokenSongButton, ClaimSongButton);
+			GlobalFunctions.ExecuteThreadSafeActionToMultiple(x => x.Enabled = BrokenSongsListBox.SelectedIndex != -1, RetryBrokenSongButton, ClaimSongButton);
 			LoadedSongsListBox.ThreadSafeAction(x => x.SelectedIndex = -1);
 			if (BrokenSongsListBox.SelectedIndex != -1 && songRequestManager.GetFromBrokenByIndex(BrokenSongsListBox.SelectedIndex, out NameValueCollection data)) {
-				SecondaryTextBoxAddField.Text = data["Link"];
+				SecondaryTextBoxAddField.Text = data.Get(nameof(SongDataContainer.Link));
+				SongDetailsListBox.DataSource = new List<string>() {
+					$"Link:\t\t{data.Get(nameof(SongDataContainer.Link))}",
+					$"Title:\t\t{data.Get(nameof(SongDataContainer.Title))}",
+					$"Original Requester:\t{data.Get(nameof(SongDataContainer.OriginalRequester))}",
+					$"Length:\t\t{data.Get(nameof(SongDataContainer.LengthInTime))}",
+					$"Ping Valid:\t{data.Get(nameof(SongDataContainer.PingValid))}",
+					$"Last Valid Ping:\t{data.Get(nameof(SongDataContainer.LastValidPing))}",
+				};
 			}
 		}
 
@@ -700,10 +770,17 @@ namespace TwitchBotManager {
 				Interaction.InputBox("Twitch Login currently empty, please insert a requester name.", "Requester field needed.", "#NOT PROVIDED#") :
 				TwitchBotLoginDetails.UserName;
 
-			if (LoadedSongsListBox.SelectedIndex != -1) {
-				songRequestManager.ClaimSong(requester, false, LoadedSongsListBox.SelectedIndex);
-			} else if (BrokenSongsListBox.SelectedIndex != -1) {
-				songRequestManager.ClaimSong(requester, true, BrokenSongsListBox.SelectedIndex);
+			switch (SongListTabs.SelectedIndex) {
+				case 0:
+					if (LoadedSongsListBox.SelectedIndex != -1) {
+						songRequestManager.ClaimSong(requester, false, LoadedSongsListBox.SelectedIndex);
+					}
+					break;
+				case 1:
+					if (BrokenSongsListBox.SelectedIndex != -1) {
+						songRequestManager.ClaimSong(requester, true, BrokenSongsListBox.SelectedIndex);
+					}
+					break;
 			}
 
 			UpdateSecPlaylistTabLists();
@@ -713,8 +790,8 @@ namespace TwitchBotManager {
 		private void ClaimAllSongsButton_Click(object sender, EventArgs e) {
 			GlobalFunctions.ExecuteThreadSafeActionToMultiple(x => x.Enabled = false, BrokenSongsListBox, LoadedSongsListBox);
 
-			string requester = string.IsNullOrEmpty(TwitchBotLoginDetails.UserName) ? 
-				Interaction.InputBox("Twitch Login currently empty, please insert a requester name.", "Requester field needed.", "#NOT PROVIDED#") : 
+			string requester = string.IsNullOrEmpty(TwitchBotLoginDetails.UserName) ?
+				Interaction.InputBox("Twitch Login currently empty, please insert a requester name.", "Requester field needed.", "#NOT PROVIDED#") :
 				TwitchBotLoginDetails.UserName;
 
 			songRequestManager.ClaimAllSongs(requester);
@@ -755,7 +832,7 @@ namespace TwitchBotManager {
 		}
 
 		private void SongRequestManager_OnProgressbarUpdate(object sender, float e) {
-			
+
 		}
 
 		private void SongRequestManager_OnSecondaryPlaylistUpdated(object sender, EventArgs e) {
@@ -771,7 +848,7 @@ namespace TwitchBotManager {
 		}
 
 		private void SongRequestManager_OnBuffering(object sender, bool e) {
-			
+
 		}
 
 		private void SongRequestManager_OnStopped(object sender, bool e) {
@@ -781,10 +858,24 @@ namespace TwitchBotManager {
 		private void SongRequestManager_OnNextSong(object sender, bool e) {
 			UpdateSongListOutput();
 		}
+		private void SearchInputBox_TextChanged(object sender, EventArgs e) {
+			UpdateSecPlaylistTabLists();
+		}
+
+		private void SongTitleCheckBox_CheckedChanged(object sender, EventArgs e) {
+			UpdateSecPlaylistTabLists();
+		}
+
+		private void YTCheckBox_CheckedChanged(object sender, EventArgs e) {
+			UpdateSecPlaylistTabLists();
+		}
+
+		private void RequesterCheckBox_CheckedChanged(object sender, EventArgs e) {
+			UpdateSecPlaylistTabLists();
+		}
 
 		#endregion
 
 		#endregion
-
 	}
 }

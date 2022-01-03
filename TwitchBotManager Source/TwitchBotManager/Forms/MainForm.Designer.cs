@@ -35,6 +35,9 @@ namespace TwitchBotManager {
 			this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.openOutputFolderToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.ExitToolButton = new System.Windows.Forms.ToolStripMenuItem();
+			this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.twitchBotToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.outputProcessingMessageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.botLoginToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.EnterBotDetailsToolButton = new System.Windows.Forms.ToolStripMenuItem();
 			this.CurrentDetailsToolButton = new System.Windows.Forms.ToolStripMenuItem();
@@ -61,31 +64,41 @@ namespace TwitchBotManager {
 			this.RemoveSongFromSecondaryButton = new System.Windows.Forms.Button();
 			this.SkipSongButton = new System.Windows.Forms.Button();
 			this.SecondaryPlaylistManagementTab = new System.Windows.Forms.TabPage();
+			this.RequesterCheckBox = new System.Windows.Forms.CheckBox();
+			this.YTCheckBox = new System.Windows.Forms.CheckBox();
+			this.label5 = new System.Windows.Forms.Label();
+			this.SongTitleCheckBox = new System.Windows.Forms.CheckBox();
+			this.SearchInputBox = new System.Windows.Forms.TextBox();
+			this.label4 = new System.Windows.Forms.Label();
+			this.label3 = new System.Windows.Forms.Label();
+			this.SongListTabs = new System.Windows.Forms.TabControl();
+			this.tabPage1 = new System.Windows.Forms.TabPage();
+			this.LoadedSongListBoxLabel = new System.Windows.Forms.Label();
+			this.LoadedSongsListBox = new System.Windows.Forms.ListBox();
+			this.tabPage2 = new System.Windows.Forms.TabPage();
+			this.label1 = new System.Windows.Forms.Label();
+			this.BrokenSongsListBox = new System.Windows.Forms.ListBox();
+			this.RetryAllBrokenSongButton = new System.Windows.Forms.Button();
+			this.RetryBrokenSongButton = new System.Windows.Forms.Button();
 			this.WriteUpdatedSongInfoToFileButton = new System.Windows.Forms.Button();
 			this.ClaimSongButton = new System.Windows.Forms.Button();
 			this.ClaimAllSongsButton = new System.Windows.Forms.Button();
-			this.RetryAllBrokenSongButton = new System.Windows.Forms.Button();
-			this.RetryBrokenSongButton = new System.Windows.Forms.Button();
-			this.label1 = new System.Windows.Forms.Label();
-			this.RemoveBrokenSongButton = new System.Windows.Forms.Button();
 			this.SecondaryTextBoxAddField = new System.Windows.Forms.TextBox();
 			this.AddSecondarySongButton = new System.Windows.Forms.Button();
 			this.RemoveSecondarySongButton = new System.Windows.Forms.Button();
-			this.LoadedSongListBoxLabel = new System.Windows.Forms.Label();
-			this.BrokenSongsListBox = new System.Windows.Forms.ListBox();
-			this.LoadedSongsListBox = new System.Windows.Forms.ListBox();
 			this.DebugTab = new System.Windows.Forms.TabPage();
 			this.DebugConsoleList = new System.Windows.Forms.ListBox();
 			this.ConnectionLabel = new System.Windows.Forms.Label();
 			this.CurrentSongRequestLabel = new System.Windows.Forms.Label();
 			this.MainProgressBar = new System.Windows.Forms.ProgressBar();
-			this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.twitchBotToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.outputProcessingMessageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.SongDetailsListBox = new System.Windows.Forms.ListBox();
 			this.LoadingBar.SuspendLayout();
 			this.MainTabControl.SuspendLayout();
 			this.SongRequestTab.SuspendLayout();
 			this.SecondaryPlaylistManagementTab.SuspendLayout();
+			this.SongListTabs.SuspendLayout();
+			this.tabPage1.SuspendLayout();
+			this.tabPage2.SuspendLayout();
 			this.DebugTab.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -185,6 +198,30 @@ namespace TwitchBotManager {
 			this.ExitToolButton.Size = new System.Drawing.Size(180, 22);
 			this.ExitToolButton.Text = "Exit";
 			this.ExitToolButton.Click += new System.EventHandler(this.ExitToolButton_Click);
+			// 
+			// settingsToolStripMenuItem
+			// 
+			this.settingsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.twitchBotToolStripMenuItem});
+			this.settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
+			this.settingsToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
+			this.settingsToolStripMenuItem.Text = "Settings";
+			// 
+			// twitchBotToolStripMenuItem
+			// 
+			this.twitchBotToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.outputProcessingMessageToolStripMenuItem});
+			this.twitchBotToolStripMenuItem.Name = "twitchBotToolStripMenuItem";
+			this.twitchBotToolStripMenuItem.Size = new System.Drawing.Size(129, 22);
+			this.twitchBotToolStripMenuItem.Text = "Twitch Bot";
+			// 
+			// outputProcessingMessageToolStripMenuItem
+			// 
+			this.outputProcessingMessageToolStripMenuItem.Enabled = false;
+			this.outputProcessingMessageToolStripMenuItem.Name = "outputProcessingMessageToolStripMenuItem";
+			this.outputProcessingMessageToolStripMenuItem.Size = new System.Drawing.Size(221, 22);
+			this.outputProcessingMessageToolStripMenuItem.Text = "Output Processing Message";
+			this.outputProcessingMessageToolStripMenuItem.Click += new System.EventHandler(this.outputProcessingMessageToolStripMenuItem_Click);
 			// 
 			// botLoginToolStripMenuItem
 			// 
@@ -448,19 +485,21 @@ namespace TwitchBotManager {
 			// 
 			// SecondaryPlaylistManagementTab
 			// 
+			this.SecondaryPlaylistManagementTab.Controls.Add(this.SongDetailsListBox);
+			this.SecondaryPlaylistManagementTab.Controls.Add(this.RequesterCheckBox);
+			this.SecondaryPlaylistManagementTab.Controls.Add(this.YTCheckBox);
+			this.SecondaryPlaylistManagementTab.Controls.Add(this.label5);
+			this.SecondaryPlaylistManagementTab.Controls.Add(this.SongTitleCheckBox);
+			this.SecondaryPlaylistManagementTab.Controls.Add(this.SearchInputBox);
+			this.SecondaryPlaylistManagementTab.Controls.Add(this.label4);
+			this.SecondaryPlaylistManagementTab.Controls.Add(this.label3);
+			this.SecondaryPlaylistManagementTab.Controls.Add(this.SongListTabs);
 			this.SecondaryPlaylistManagementTab.Controls.Add(this.WriteUpdatedSongInfoToFileButton);
 			this.SecondaryPlaylistManagementTab.Controls.Add(this.ClaimSongButton);
 			this.SecondaryPlaylistManagementTab.Controls.Add(this.ClaimAllSongsButton);
-			this.SecondaryPlaylistManagementTab.Controls.Add(this.RetryAllBrokenSongButton);
-			this.SecondaryPlaylistManagementTab.Controls.Add(this.RetryBrokenSongButton);
-			this.SecondaryPlaylistManagementTab.Controls.Add(this.label1);
-			this.SecondaryPlaylistManagementTab.Controls.Add(this.RemoveBrokenSongButton);
 			this.SecondaryPlaylistManagementTab.Controls.Add(this.SecondaryTextBoxAddField);
 			this.SecondaryPlaylistManagementTab.Controls.Add(this.AddSecondarySongButton);
 			this.SecondaryPlaylistManagementTab.Controls.Add(this.RemoveSecondarySongButton);
-			this.SecondaryPlaylistManagementTab.Controls.Add(this.LoadedSongListBoxLabel);
-			this.SecondaryPlaylistManagementTab.Controls.Add(this.BrokenSongsListBox);
-			this.SecondaryPlaylistManagementTab.Controls.Add(this.LoadedSongsListBox);
 			this.SecondaryPlaylistManagementTab.Location = new System.Drawing.Point(4, 22);
 			this.SecondaryPlaylistManagementTab.Name = "SecondaryPlaylistManagementTab";
 			this.SecondaryPlaylistManagementTab.Size = new System.Drawing.Size(1114, 429);
@@ -468,41 +507,153 @@ namespace TwitchBotManager {
 			this.SecondaryPlaylistManagementTab.Text = "Sec\' Playlist Management";
 			this.SecondaryPlaylistManagementTab.UseVisualStyleBackColor = true;
 			// 
-			// WriteUpdatedSongInfoToFileButton
+			// RequesterCheckBox
 			// 
-			this.WriteUpdatedSongInfoToFileButton.Location = new System.Drawing.Point(847, 385);
-			this.WriteUpdatedSongInfoToFileButton.Name = "WriteUpdatedSongInfoToFileButton";
-			this.WriteUpdatedSongInfoToFileButton.Size = new System.Drawing.Size(102, 23);
-			this.WriteUpdatedSongInfoToFileButton.TabIndex = 12;
-			this.WriteUpdatedSongInfoToFileButton.Text = "Update File Data";
-			this.WriteUpdatedSongInfoToFileButton.UseVisualStyleBackColor = true;
-			this.WriteUpdatedSongInfoToFileButton.Click += new System.EventHandler(this.WriteUpdatedSongInfoToFileButton_Click);
+			this.RequesterCheckBox.AutoSize = true;
+			this.RequesterCheckBox.Location = new System.Drawing.Point(789, 120);
+			this.RequesterCheckBox.Name = "RequesterCheckBox";
+			this.RequesterCheckBox.Size = new System.Drawing.Size(75, 17);
+			this.RequesterCheckBox.TabIndex = 20;
+			this.RequesterCheckBox.Text = "Requester";
+			this.RequesterCheckBox.UseVisualStyleBackColor = true;
+			this.RequesterCheckBox.CheckedChanged += new System.EventHandler(this.RequesterCheckBox_CheckedChanged);
 			// 
-			// ClaimSongButton
+			// YTCheckBox
 			// 
-			this.ClaimSongButton.Enabled = false;
-			this.ClaimSongButton.Location = new System.Drawing.Point(955, 385);
-			this.ClaimSongButton.Name = "ClaimSongButton";
-			this.ClaimSongButton.Size = new System.Drawing.Size(75, 23);
-			this.ClaimSongButton.TabIndex = 11;
-			this.ClaimSongButton.Text = "Claim Song";
-			this.ClaimSongButton.UseVisualStyleBackColor = true;
-			this.ClaimSongButton.Click += new System.EventHandler(this.ClaimSongButton_Click);
+			this.YTCheckBox.AutoSize = true;
+			this.YTCheckBox.Location = new System.Drawing.Point(715, 120);
+			this.YTCheckBox.Name = "YTCheckBox";
+			this.YTCheckBox.Size = new System.Drawing.Size(68, 17);
+			this.YTCheckBox.TabIndex = 19;
+			this.YTCheckBox.Text = "YT Code";
+			this.YTCheckBox.UseVisualStyleBackColor = true;
+			this.YTCheckBox.CheckedChanged += new System.EventHandler(this.YTCheckBox_CheckedChanged);
 			// 
-			// ClaimAllSongsButton
+			// label5
 			// 
-			this.ClaimAllSongsButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-			this.ClaimAllSongsButton.Location = new System.Drawing.Point(1036, 385);
-			this.ClaimAllSongsButton.Name = "ClaimAllSongsButton";
-			this.ClaimAllSongsButton.Size = new System.Drawing.Size(75, 23);
-			this.ClaimAllSongsButton.TabIndex = 10;
-			this.ClaimAllSongsButton.Text = "Claim All";
-			this.ClaimAllSongsButton.UseVisualStyleBackColor = true;
-			this.ClaimAllSongsButton.Click += new System.EventHandler(this.ClaimAllSongsButton_Click);
+			this.label5.AutoSize = true;
+			this.label5.Location = new System.Drawing.Point(547, 120);
+			this.label5.Name = "label5";
+			this.label5.Size = new System.Drawing.Size(82, 13);
+			this.label5.TabIndex = 18;
+			this.label5.Text = "Search Params:";
+			// 
+			// SongTitleCheckBox
+			// 
+			this.SongTitleCheckBox.AutoSize = true;
+			this.SongTitleCheckBox.Location = new System.Drawing.Point(635, 119);
+			this.SongTitleCheckBox.Name = "SongTitleCheckBox";
+			this.SongTitleCheckBox.Size = new System.Drawing.Size(74, 17);
+			this.SongTitleCheckBox.TabIndex = 17;
+			this.SongTitleCheckBox.Text = "Song Title";
+			this.SongTitleCheckBox.UseVisualStyleBackColor = true;
+			this.SongTitleCheckBox.CheckedChanged += new System.EventHandler(this.SongTitleCheckBox_CheckedChanged);
+			// 
+			// SearchInputBox
+			// 
+			this.SearchInputBox.Location = new System.Drawing.Point(547, 94);
+			this.SearchInputBox.Name = "SearchInputBox";
+			this.SearchInputBox.Size = new System.Drawing.Size(559, 20);
+			this.SearchInputBox.TabIndex = 16;
+			this.SearchInputBox.TextChanged += new System.EventHandler(this.SearchInputBox_TextChanged);
+			// 
+			// label4
+			// 
+			this.label4.AutoSize = true;
+			this.label4.Location = new System.Drawing.Point(544, 77);
+			this.label4.Name = "label4";
+			this.label4.Size = new System.Drawing.Size(44, 13);
+			this.label4.TabIndex = 15;
+			this.label4.Text = "Search:";
+			// 
+			// label3
+			// 
+			this.label3.AutoSize = true;
+			this.label3.Location = new System.Drawing.Point(544, 9);
+			this.label3.Name = "label3";
+			this.label3.Size = new System.Drawing.Size(99, 13);
+			this.label3.TabIndex = 14;
+			this.label3.Text = "Song Input/Output:";
+			// 
+			// SongListTabs
+			// 
+			this.SongListTabs.Controls.Add(this.tabPage1);
+			this.SongListTabs.Controls.Add(this.tabPage2);
+			this.SongListTabs.Location = new System.Drawing.Point(8, 3);
+			this.SongListTabs.Name = "SongListTabs";
+			this.SongListTabs.SelectedIndex = 0;
+			this.SongListTabs.Size = new System.Drawing.Size(521, 423);
+			this.SongListTabs.TabIndex = 13;
+			// 
+			// tabPage1
+			// 
+			this.tabPage1.Controls.Add(this.LoadedSongListBoxLabel);
+			this.tabPage1.Controls.Add(this.LoadedSongsListBox);
+			this.tabPage1.Location = new System.Drawing.Point(4, 22);
+			this.tabPage1.Name = "tabPage1";
+			this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
+			this.tabPage1.Size = new System.Drawing.Size(513, 397);
+			this.tabPage1.TabIndex = 0;
+			this.tabPage1.Text = "Secondary Songs";
+			this.tabPage1.UseVisualStyleBackColor = true;
+			// 
+			// LoadedSongListBoxLabel
+			// 
+			this.LoadedSongListBoxLabel.AutoSize = true;
+			this.LoadedSongListBoxLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.LoadedSongListBoxLabel.Location = new System.Drawing.Point(6, 3);
+			this.LoadedSongListBoxLabel.Name = "LoadedSongListBoxLabel";
+			this.LoadedSongListBoxLabel.Size = new System.Drawing.Size(194, 17);
+			this.LoadedSongListBoxLabel.TabIndex = 2;
+			this.LoadedSongListBoxLabel.Text = "Loaded Secondary Songs";
+			// 
+			// LoadedSongsListBox
+			// 
+			this.LoadedSongsListBox.FormattingEnabled = true;
+			this.LoadedSongsListBox.HorizontalScrollbar = true;
+			this.LoadedSongsListBox.Location = new System.Drawing.Point(6, 23);
+			this.LoadedSongsListBox.Name = "LoadedSongsListBox";
+			this.LoadedSongsListBox.Size = new System.Drawing.Size(501, 368);
+			this.LoadedSongsListBox.TabIndex = 0;
+			this.LoadedSongsListBox.SelectedIndexChanged += new System.EventHandler(this.LoadedSongsListBox_SelectedIndexChanged);
+			// 
+			// tabPage2
+			// 
+			this.tabPage2.Controls.Add(this.label1);
+			this.tabPage2.Controls.Add(this.BrokenSongsListBox);
+			this.tabPage2.Controls.Add(this.RetryAllBrokenSongButton);
+			this.tabPage2.Controls.Add(this.RetryBrokenSongButton);
+			this.tabPage2.Location = new System.Drawing.Point(4, 22);
+			this.tabPage2.Name = "tabPage2";
+			this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
+			this.tabPage2.Size = new System.Drawing.Size(513, 397);
+			this.tabPage2.TabIndex = 1;
+			this.tabPage2.Text = "Broken Songs";
+			this.tabPage2.UseVisualStyleBackColor = true;
+			// 
+			// label1
+			// 
+			this.label1.AutoSize = true;
+			this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.label1.Location = new System.Drawing.Point(6, 3);
+			this.label1.Name = "label1";
+			this.label1.Size = new System.Drawing.Size(168, 17);
+			this.label1.TabIndex = 7;
+			this.label1.Text = "Loaded Broken Songs";
+			// 
+			// BrokenSongsListBox
+			// 
+			this.BrokenSongsListBox.FormattingEnabled = true;
+			this.BrokenSongsListBox.HorizontalScrollbar = true;
+			this.BrokenSongsListBox.Location = new System.Drawing.Point(6, 23);
+			this.BrokenSongsListBox.Name = "BrokenSongsListBox";
+			this.BrokenSongsListBox.Size = new System.Drawing.Size(501, 342);
+			this.BrokenSongsListBox.TabIndex = 1;
+			this.BrokenSongsListBox.SelectedIndexChanged += new System.EventHandler(this.BrokenSongsListBox_SelectedIndexChanged);
 			// 
 			// RetryAllBrokenSongButton
 			// 
-			this.RetryAllBrokenSongButton.Location = new System.Drawing.Point(178, 385);
+			this.RetryAllBrokenSongButton.Location = new System.Drawing.Point(424, 368);
 			this.RetryAllBrokenSongButton.Name = "RetryAllBrokenSongButton";
 			this.RetryAllBrokenSongButton.Size = new System.Drawing.Size(83, 23);
 			this.RetryAllBrokenSongButton.TabIndex = 9;
@@ -513,7 +664,7 @@ namespace TwitchBotManager {
 			// RetryBrokenSongButton
 			// 
 			this.RetryBrokenSongButton.Enabled = false;
-			this.RetryBrokenSongButton.Location = new System.Drawing.Point(89, 385);
+			this.RetryBrokenSongButton.Location = new System.Drawing.Point(335, 368);
 			this.RetryBrokenSongButton.Name = "RetryBrokenSongButton";
 			this.RetryBrokenSongButton.Size = new System.Drawing.Size(83, 23);
 			this.RetryBrokenSongButton.TabIndex = 8;
@@ -521,39 +672,50 @@ namespace TwitchBotManager {
 			this.RetryBrokenSongButton.UseVisualStyleBackColor = true;
 			this.RetryBrokenSongButton.Click += new System.EventHandler(this.RetryBrokenSongButton_Click);
 			// 
-			// label1
+			// WriteUpdatedSongInfoToFileButton
 			// 
-			this.label1.AutoSize = true;
-			this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.label1.Location = new System.Drawing.Point(0, 251);
-			this.label1.Name = "label1";
-			this.label1.Size = new System.Drawing.Size(168, 17);
-			this.label1.TabIndex = 7;
-			this.label1.Text = "Loaded Broken Songs";
+			this.WriteUpdatedSongInfoToFileButton.Location = new System.Drawing.Point(1004, 403);
+			this.WriteUpdatedSongInfoToFileButton.Name = "WriteUpdatedSongInfoToFileButton";
+			this.WriteUpdatedSongInfoToFileButton.Size = new System.Drawing.Size(102, 23);
+			this.WriteUpdatedSongInfoToFileButton.TabIndex = 12;
+			this.WriteUpdatedSongInfoToFileButton.Text = "Update File Data";
+			this.WriteUpdatedSongInfoToFileButton.UseVisualStyleBackColor = true;
+			this.WriteUpdatedSongInfoToFileButton.Click += new System.EventHandler(this.WriteUpdatedSongInfoToFileButton_Click);
 			// 
-			// RemoveBrokenSongButton
+			// ClaimSongButton
 			// 
-			this.RemoveBrokenSongButton.Enabled = false;
-			this.RemoveBrokenSongButton.Location = new System.Drawing.Point(0, 385);
-			this.RemoveBrokenSongButton.Name = "RemoveBrokenSongButton";
-			this.RemoveBrokenSongButton.Size = new System.Drawing.Size(83, 23);
-			this.RemoveBrokenSongButton.TabIndex = 6;
-			this.RemoveBrokenSongButton.Text = "Remove Song";
-			this.RemoveBrokenSongButton.UseVisualStyleBackColor = true;
-			this.RemoveBrokenSongButton.Click += new System.EventHandler(this.RemoveBrokenSongButton_Click);
+			this.ClaimSongButton.Enabled = false;
+			this.ClaimSongButton.Location = new System.Drawing.Point(628, 51);
+			this.ClaimSongButton.Name = "ClaimSongButton";
+			this.ClaimSongButton.Size = new System.Drawing.Size(75, 23);
+			this.ClaimSongButton.TabIndex = 11;
+			this.ClaimSongButton.Text = "Claim Song";
+			this.ClaimSongButton.UseVisualStyleBackColor = true;
+			this.ClaimSongButton.Click += new System.EventHandler(this.ClaimSongButton_Click);
+			// 
+			// ClaimAllSongsButton
+			// 
+			this.ClaimAllSongsButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+			this.ClaimAllSongsButton.Location = new System.Drawing.Point(547, 51);
+			this.ClaimAllSongsButton.Name = "ClaimAllSongsButton";
+			this.ClaimAllSongsButton.Size = new System.Drawing.Size(75, 23);
+			this.ClaimAllSongsButton.TabIndex = 10;
+			this.ClaimAllSongsButton.Text = "Claim All";
+			this.ClaimAllSongsButton.UseVisualStyleBackColor = true;
+			this.ClaimAllSongsButton.Click += new System.EventHandler(this.ClaimAllSongsButton_Click);
 			// 
 			// SecondaryTextBoxAddField
 			// 
-			this.SecondaryTextBoxAddField.Location = new System.Drawing.Point(182, 227);
+			this.SecondaryTextBoxAddField.Location = new System.Drawing.Point(547, 25);
 			this.SecondaryTextBoxAddField.Name = "SecondaryTextBoxAddField";
-			this.SecondaryTextBoxAddField.Size = new System.Drawing.Size(929, 20);
+			this.SecondaryTextBoxAddField.Size = new System.Drawing.Size(559, 20);
 			this.SecondaryTextBoxAddField.TabIndex = 5;
 			this.SecondaryTextBoxAddField.TextChanged += new System.EventHandler(this.SecondaryTextBoxAddField_TextChanged);
 			// 
 			// AddSecondarySongButton
 			// 
 			this.AddSecondarySongButton.Enabled = false;
-			this.AddSecondarySongButton.Location = new System.Drawing.Point(89, 225);
+			this.AddSecondarySongButton.Location = new System.Drawing.Point(1023, 51);
 			this.AddSecondarySongButton.Name = "AddSecondarySongButton";
 			this.AddSecondarySongButton.Size = new System.Drawing.Size(83, 23);
 			this.AddSecondarySongButton.TabIndex = 4;
@@ -564,41 +726,13 @@ namespace TwitchBotManager {
 			// RemoveSecondarySongButton
 			// 
 			this.RemoveSecondarySongButton.Enabled = false;
-			this.RemoveSecondarySongButton.Location = new System.Drawing.Point(0, 225);
+			this.RemoveSecondarySongButton.Location = new System.Drawing.Point(935, 51);
 			this.RemoveSecondarySongButton.Name = "RemoveSecondarySongButton";
 			this.RemoveSecondarySongButton.Size = new System.Drawing.Size(83, 23);
 			this.RemoveSecondarySongButton.TabIndex = 3;
 			this.RemoveSecondarySongButton.Text = "Remove Song";
 			this.RemoveSecondarySongButton.UseVisualStyleBackColor = true;
 			this.RemoveSecondarySongButton.Click += new System.EventHandler(this.RemoveSecondarySongButton_Click);
-			// 
-			// LoadedSongListBoxLabel
-			// 
-			this.LoadedSongListBoxLabel.AutoSize = true;
-			this.LoadedSongListBoxLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.LoadedSongListBoxLabel.Location = new System.Drawing.Point(0, 0);
-			this.LoadedSongListBoxLabel.Name = "LoadedSongListBoxLabel";
-			this.LoadedSongListBoxLabel.Size = new System.Drawing.Size(194, 17);
-			this.LoadedSongListBoxLabel.TabIndex = 2;
-			this.LoadedSongListBoxLabel.Text = "Loaded Secondary Songs";
-			// 
-			// BrokenSongsListBox
-			// 
-			this.BrokenSongsListBox.FormattingEnabled = true;
-			this.BrokenSongsListBox.Location = new System.Drawing.Point(0, 271);
-			this.BrokenSongsListBox.Name = "BrokenSongsListBox";
-			this.BrokenSongsListBox.Size = new System.Drawing.Size(1111, 108);
-			this.BrokenSongsListBox.TabIndex = 1;
-			this.BrokenSongsListBox.SelectedIndexChanged += new System.EventHandler(this.BrokenSongsListBox_SelectedIndexChanged);
-			// 
-			// LoadedSongsListBox
-			// 
-			this.LoadedSongsListBox.FormattingEnabled = true;
-			this.LoadedSongsListBox.Location = new System.Drawing.Point(0, 20);
-			this.LoadedSongsListBox.Name = "LoadedSongsListBox";
-			this.LoadedSongsListBox.Size = new System.Drawing.Size(1111, 199);
-			this.LoadedSongsListBox.TabIndex = 0;
-			this.LoadedSongsListBox.SelectedIndexChanged += new System.EventHandler(this.LoadedSongsListBox_SelectedIndexChanged);
 			// 
 			// DebugTab
 			// 
@@ -655,29 +789,15 @@ namespace TwitchBotManager {
 			this.MainProgressBar.Size = new System.Drawing.Size(100, 23);
 			this.MainProgressBar.TabIndex = 21;
 			// 
-			// settingsToolStripMenuItem
+			// SongDetailsListBox
 			// 
-			this.settingsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.twitchBotToolStripMenuItem});
-			this.settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
-			this.settingsToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
-			this.settingsToolStripMenuItem.Text = "Settings";
-			// 
-			// twitchBotToolStripMenuItem
-			// 
-			this.twitchBotToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.outputProcessingMessageToolStripMenuItem});
-			this.twitchBotToolStripMenuItem.Name = "twitchBotToolStripMenuItem";
-			this.twitchBotToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-			this.twitchBotToolStripMenuItem.Text = "Twitch Bot";
-			// 
-			// outputProcessingMessageToolStripMenuItem
-			// 
-			this.outputProcessingMessageToolStripMenuItem.Enabled = false;
-			this.outputProcessingMessageToolStripMenuItem.Name = "outputProcessingMessageToolStripMenuItem";
-			this.outputProcessingMessageToolStripMenuItem.Size = new System.Drawing.Size(221, 22);
-			this.outputProcessingMessageToolStripMenuItem.Text = "Output Processing Message";
-			this.outputProcessingMessageToolStripMenuItem.Click += new System.EventHandler(this.outputProcessingMessageToolStripMenuItem_Click);
+			this.SongDetailsListBox.FormattingEnabled = true;
+			this.SongDetailsListBox.HorizontalScrollbar = true;
+			this.SongDetailsListBox.Location = new System.Drawing.Point(547, 269);
+			this.SongDetailsListBox.Name = "SongDetailsListBox";
+			this.SongDetailsListBox.SelectionMode = System.Windows.Forms.SelectionMode.None;
+			this.SongDetailsListBox.Size = new System.Drawing.Size(559, 121);
+			this.SongDetailsListBox.TabIndex = 33;
 			// 
 			// MainForm
 			// 
@@ -704,6 +824,11 @@ namespace TwitchBotManager {
 			this.SongRequestTab.PerformLayout();
 			this.SecondaryPlaylistManagementTab.ResumeLayout(false);
 			this.SecondaryPlaylistManagementTab.PerformLayout();
+			this.SongListTabs.ResumeLayout(false);
+			this.tabPage1.ResumeLayout(false);
+			this.tabPage1.PerformLayout();
+			this.tabPage2.ResumeLayout(false);
+			this.tabPage2.PerformLayout();
 			this.DebugTab.ResumeLayout(false);
 			this.ResumeLayout(false);
 			this.PerformLayout();
@@ -750,7 +875,6 @@ namespace TwitchBotManager {
 		private System.Windows.Forms.ToolStripMenuItem httpsassetstoreunitycompublishers35238ToolStripMenuItem;
 		private System.Windows.Forms.ProgressBar MainProgressBar;
 		private System.Windows.Forms.TabPage SecondaryPlaylistManagementTab;
-		private System.Windows.Forms.Button RemoveBrokenSongButton;
 		private System.Windows.Forms.TextBox SecondaryTextBoxAddField;
 		private System.Windows.Forms.Button AddSecondarySongButton;
 		private System.Windows.Forms.Button RemoveSecondarySongButton;
@@ -769,6 +893,17 @@ namespace TwitchBotManager {
 		private System.Windows.Forms.ToolStripMenuItem settingsToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem twitchBotToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem outputProcessingMessageToolStripMenuItem;
+		private System.Windows.Forms.TabControl SongListTabs;
+		private System.Windows.Forms.TabPage tabPage1;
+		private System.Windows.Forms.TabPage tabPage2;
+		private System.Windows.Forms.CheckBox RequesterCheckBox;
+		private System.Windows.Forms.CheckBox YTCheckBox;
+		private System.Windows.Forms.Label label5;
+		private System.Windows.Forms.CheckBox SongTitleCheckBox;
+		private System.Windows.Forms.TextBox SearchInputBox;
+		private System.Windows.Forms.Label label4;
+		private System.Windows.Forms.Label label3;
+		private System.Windows.Forms.ListBox SongDetailsListBox;
 	}
 }
 

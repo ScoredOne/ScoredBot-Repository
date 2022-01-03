@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -128,6 +129,8 @@ namespace TwitchBotManager.Code.Classes {
 		public event EventHandler<float> OnProgressbarUpdate;
 
 		public event EventHandler<int> OnVolumeUpdate;
+
+		public event EventHandler<(int LiteralPosition, string TranslatedTime)> OnPlayerProgress;
 
 		#endregion
 
@@ -270,6 +273,7 @@ namespace TwitchBotManager.Code.Classes {
 			VLCPlayer.Buffering += VLCPlayer_Buffering;
 			VLCPlayer.Playing += VLCPlayer_Playing;
 			VLCPlayer.Paused += VLCPlayer_Paused;
+			//VLCPlayer.PositionChanged += VLCPlayer_PositionChanged;
 			//VLCPlayer.EncounteredError += VLCPlayer_EncounteredError;
 		}
 
@@ -437,18 +441,15 @@ namespace TwitchBotManager.Code.Classes {
 
 				if (CurrentSong.LocalFile && !CurrentSong.AudioCached()) {
 					throw new Exception($"Local file: {CurrentSong.DirLocation} Not found.");
-				} else if (!CurrentSong.AudioCached()) {
+				} else if (!CurrentSong.AudioCached() && !CurrentSong.DownloadWorking) {
 					await CurrentSong.GetYouTubeAudioData(YoutubeDLWorker);
+					if (!CurrentSong.AudioCached()) {
+						throw new Exception($"Song : {CurrentSong.Title} Failed to find Cache.");
+					}
 				}
 
-				if (!CurrentSong.AudioCached()) {
-					throw new Exception($"Song : {CurrentSong.Title} Failed to find Cache.");
-				}
-
-				VLCPlayer.Media = media = new Media(_libVLC, CurrentSong.DirLocation);
+				VLCPlayer.Media = media = new Media(_libVLC, CurrentSong.FullDirLocation);
 				await VLCPlayer.Media.Parse();
-
-				//'file:///C:\Users\Public\Videos\Sample Videos\Wildlife.mwv'
 
 				VLCPlayer.Play();
 
@@ -508,6 +509,8 @@ namespace TwitchBotManager.Code.Classes {
 
 						Task.WhenAll(SecondarySongPlaylist.Select(e => e.Key.GetYouTubeAudioData(YoutubeDLWorker)))
 							.ContinueWith(x => {
+								ProcessIDGeneration();
+
 								MainForm.StaticPostToDebug($"Secondary Playlist Songs Loaded. All Threads Completed. [{SecondarySongPlaylist.Sum(y => y.Key.AudioCached() ? 1 : 0)} Successful] - [{SecondarySongPlaylist.Sum(y => y.Key.AudioCached() ? 0 : 1)} Failed]");
 
 								WriteSongListsToFile(false);
@@ -569,6 +572,14 @@ namespace TwitchBotManager.Code.Classes {
 				}
 
 				MainForm.StaticPostToDebug($"Secondary Playlist Song Data Loaded... {(song.LocalFile ? song.DirLocation : song.Title)}");
+			} else if (!song.PingValid && song.AudioCached()) {
+				BrokenLinklist.Remove(song);
+
+				if (!SecondarySongPlaylist.ContainsKey(song)) {
+					SecondarySongPlaylist.Add(song, false);
+				}
+
+				MainForm.StaticPostToDebug($"Secondary Playlist Song Data Loaded... *PING FAILED - LOCAL FILE FOUND* {(song.LocalFile ? song.DirLocation : song.Title)}");
 			} else {
 				SecondarySongPlaylist.Remove(song);
 
@@ -583,9 +594,10 @@ namespace TwitchBotManager.Code.Classes {
 		public void WriteSongListsToFile(bool promptRequired) {
 			if (SecSonglistAvailable) {
 				if (promptRequired) {
-					DialogResult prompt = MessageBox.Show("Are you sure you wish to overwrite the saved song list with whats in this App?", "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+					DialogResult prompt = MessageBox.Show("Are you sure you wish to overwrite the saved song list with what is in this App?", "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
 					if (prompt != DialogResult.Yes) {
+						MainForm.StaticPostToDebug("Song list write aborted: Prompt denied.");
 						return;
 					}
 				}
@@ -595,7 +607,8 @@ namespace TwitchBotManager.Code.Classes {
 				File.WriteAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt", refreshedList);
 				MainForm.StaticPostToDebug("Secondary Song List File successfully updated");
 			} else {
-				MessageBox.Show("Confirm", "No songs are currently in the Secondary Playlist.", MessageBoxButtons.OK);
+				//MessageBox.Show("Confirm", "No songs are currently in the Secondary Playlist.", MessageBoxButtons.OK);
+				MainForm.StaticPostToDebug("No songs are currently in the Secondary Playlist.");
 			}
 		}
 
@@ -610,45 +623,59 @@ namespace TwitchBotManager.Code.Classes {
 				return "Song requests currently disabled.";
 			}
 
-			GlobalFunctions.GetYouTubeVideoID(link, out string ID);
+			string output = "";
+			SongDataContainer newsong = null;
 
-			foreach (SongDataContainer song in Songlist) {
-				if (song.Link.Contains(ID)) {
-					song.CurrentRequesters.AddLast(requester);
-					Songlist.AddLast(song);
-					return $"@{requester} : {song.Title} was Successfully Requested.";
-				}
-			}
+			attempt: try {
+				GlobalFunctions.GetYouTubeVideoID(link, out string ID);
 
-			foreach (SongDataContainer song in SecondarySongPlaylist.Keys) {
-				if (song.Link.Contains(ID)) {
-					song.CurrentRequesters.AddLast(requester);
-					Songlist.AddLast(song);
-					return $"@{requester} : {song.Title} was Successfully Requested.";
-				}
-			}
-
-			foreach (SongDataContainer song in BrokenLinklist) {
-				if (song.Link.Contains(ID)) {
-					return $"@{requester} : {song.Title} Is a saved song but unfortunatly isnt working at the moment, sorry for the inconvenience.";
-				}
-			}
-
-			SongDataContainer newsong = await SongDataContainer.CreateNewContainer(link, requester, YoutubeDLWorker);
-			if (newsong.PingValid) {
-				Songlist.AddLast(newsong);
-
-				foreach (SongDataContainer songData in Songlist.Take(RequestsCacheAmount > Songlist.Count ? Songlist.Count : RequestsCacheAmount.Value)) {
-					if (!songData.AudioCached()) {
-						await songData.GetYouTubeAudioData(YoutubeDLWorker);
+				foreach (SongDataContainer song in Songlist.ToArray()) {
+					if (song.Link.Contains(ID)) {
+						song.CurrentRequesters.AddLast(requester);
+						Songlist.AddLast(song);
+						output= $"@{requester} : {song.Title} was Successfully Requested.";
+						break;
 					}
 				}
 
-				return $"@{requester} : {newsong.Title} was Successfully Requested.";
-			} else {
-				return $"@{requester} : {newsong.Link} Request Failed. Ping to YouTube Failed.";
-			}
+				foreach (SongDataContainer song in SecondarySongPlaylist.Keys) {
+					if (song.Link.Contains(ID)) {
+						song.CurrentRequesters.AddLast(requester);
+						Songlist.AddLast(song);
+						output= $"@{requester} : {song.Title} was Successfully Requested.";
+						break;
+					}
+				}
 
+				foreach (SongDataContainer song in BrokenLinklist) {
+					if (song.Link.Contains(ID)) {
+						output= $"@{requester} : {song.Title} Is a saved song but unfortunatly isnt working at the moment, sorry for the inconvenience.";
+						break;
+					}
+				}
+
+				if (newsong == null) {
+					newsong = await SongDataContainer.CreateNewContainer(link, requester, YoutubeDLWorker);
+				}
+
+				if (newsong.PingValid) {
+					Songlist.AddLast(newsong);
+
+					foreach (SongDataContainer songData in Songlist.Take(RequestsCacheAmount > Songlist.Count ? Songlist.Count : RequestsCacheAmount.Value)) {
+						if (!songData.AudioCached()) {
+							await songData.GetYouTubeAudioData(YoutubeDLWorker);
+						}
+					}
+
+					output= $"@{requester} : {newsong.Title} was Successfully Requested.";
+				} else {
+					output= $"@{requester} : {newsong.Link} Request Failed. Ping to YouTube Failed.";
+				}
+			} catch {
+				await Task.Delay(500);
+				goto attempt;
+			}
+			return output;
 		}
 
 		#endregion
@@ -731,33 +758,16 @@ namespace TwitchBotManager.Code.Classes {
 		}
 
 		/// <summary>
-		/// Returns the ToString of the secondary song data and its index in the list.
+		/// Returns the secondary song data.
 		/// </summary>
 		/// <returns></returns>
-		public Dictionary<int, string> GetSecondaryPlaylist(bool newlines = false) {
-			Dictionary<int, string> output = new Dictionary<int, string>();
-			SongDataContainer[] keys = SecondarySongPlaylist.Keys.ToArray();
-
-			for (int x = 0; x < SecondarySongPlaylist.Count; x++) {
-				output.Add(x, keys[x].OutputString(-1, newlines));
-			}
-
-			return output;
-		}
+		public List<NameValueCollection> GetSecondaryPlaylist() => SecondarySongPlaylist.Keys.Select(e => e.OutputDataValues()).ToList();
 
 		/// <summary>
-		/// Returns the ToString of the broken song data and its index in the list.
+		/// Returns the broken song data.
 		/// </summary>
 		/// <returns></returns>
-		public Dictionary<int, string> GetBrokenPlaylist(bool newlines = false) {
-			Dictionary<int, string> output = new Dictionary<int, string>();
-
-			for (int x = 0; x < BrokenLinklist.Count; x++) {
-				output.Add(x, BrokenLinklist[x].OutputString(-1, newlines));
-			}
-
-			return output;
-		}
+		public List<NameValueCollection> GetBrokenPlaylist() => BrokenLinklist.Select(e => e.OutputDataValues()).ToList();
 
 		/// <summary>
 		/// Returns the ToString of the current song requests and its index in the list.
@@ -800,7 +810,7 @@ namespace TwitchBotManager.Code.Classes {
 		}
 
 		public bool GetFromBrokenByIndex(int index, out NameValueCollection data) {
-			if (index > BrokenLinklist.Count) {
+			if (index < BrokenLinklist.Count) {
 				data = BrokenLinklist[index].OutputDataValues();
 				return true;
 			}
@@ -853,59 +863,27 @@ namespace TwitchBotManager.Code.Classes {
 			return false;
 		}
 
-		public bool RemoveSecondaryAtIndex(int index, out string output) {
-			if (SecondarySongPlaylist.Count <= index) {
-				output = "ERROR: Index Provided out of range of Secondary Playlist.";
+		public bool RemoveSongByGenID(string ID) {
+			SongDataContainer songwithID;
+
+			songwithID = SecondarySongPlaylist.Keys.ToList().Find(e => e.UniqueSystemID.Equals(ID));
+			if (songwithID != null) {
+				SecondarySongPlaylist.Remove(songwithID);
+			}
+			songwithID = BrokenLinklist.Find(e => e.UniqueSystemID.Equals(ID));
+			if (songwithID != null) {
+				BrokenLinklist.Remove(songwithID);
+			}
+			WriteSongListsToFile(false);
+
+			if (songwithID != null) {
+				MainForm.StaticPostToDebug($"Song: {songwithID.Title} {(songwithID.LocalFile ? songwithID.FullDirLocation : songwithID.Link)} Successfully removed.");
+				songwithID = null;
+				return true;
+			} else {
+				MainForm.StaticPostToDebug($"No song with generated ID: {ID}, found in the system. The song must have already been removed.");
 				return false;
 			}
-
-			SongDataContainer song = SecondarySongPlaylist.ElementAt(index).Key;
-			SecondarySongPlaylist.Remove(song);
-			if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt")) {
-				List<string> songs = File.ReadAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt").ToList();
-
-				if (song.LocalFile) {
-					songs.RemoveAll(x => x.Contains(song.DirLocation));
-				} else {
-					GlobalFunctions.GetYouTubeVideoID(song.Link, out string ID);
-					songs.RemoveAll(x => x.Contains(ID));
-				}
-
-				File.WriteAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt", songs);
-				MainForm.StaticPostToDebug($"{(song.LocalFile ? song.DirLocation : (string.IsNullOrEmpty(song.Title) ? song.Link : song.Title))} : Has been removed from the Secondary Playlist");
-			} else {
-				File.Create(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt");
-			}
-
-			output = $"{(song.LocalFile ? song.DirLocation : (string.IsNullOrEmpty(song.Title) ? song.Link : song.Title))} : Has been removed from the Secondary Playlist";
-			return true;
-		}
-
-		public bool RemoveBrokenAtIndex(int index, out string output) {
-			if (BrokenLinklist.Count <= index) {
-				output = "ERROR: Index Provided out of range of Secondary Playlist.";
-				return false;
-			}
-
-			SongDataContainer song = BrokenLinklist[index];
-			BrokenLinklist.Remove(song);
-			if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt")) {
-				List<string> songs = File.ReadAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt").ToList();
-
-				if (song.LocalFile) {
-					songs.RemoveAll(x => x.Contains(song.DirLocation));
-				} else {
-					GlobalFunctions.GetYouTubeVideoID(song.Link, out string ID);
-					songs.RemoveAll(x => x.Contains(ID));
-				}
-				File.WriteAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt", songs);
-				MainForm.StaticPostToDebug($"{(song.LocalFile ? song.DirLocation : (string.IsNullOrEmpty(song.Title) ? song.Link : song.Title))} : Has been removed from the Broken Playlist");
-			} else {
-				File.Create(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt");
-			}
-
-			output = $"{(song.LocalFile ? song.DirLocation : (string.IsNullOrEmpty(song.Title) ? song.Link : song.Title))} : Has been removed from the Broken Playlist";
-			return true;
 		}
 
 		public async Task<bool> AddSecondarySong(string address, string requester, bool local) {
@@ -916,6 +894,7 @@ namespace TwitchBotManager.Code.Classes {
 				}
 
 				SongDataContainer song = SongDataContainer.CreateNewContainer(address, requester, local: local);
+				song.UniqueSystemID = GenerateIDCode();
 				if (File.Exists(address)) {
 					SecondarySongPlaylist.Add(song, false);
 					WriteSingleSongToFile(song);
@@ -931,6 +910,7 @@ namespace TwitchBotManager.Code.Classes {
 				}
 
 				SongDataContainer song = await SongDataContainer.CreateNewContainer(address, requester, YoutubeDLWorker, true);
+				song.UniqueSystemID = GenerateIDCode();
 				if (song.PingValid) {
 					SecondarySongPlaylist.Add(song, false);
 					WriteSingleSongToFile(song);
@@ -1018,6 +998,49 @@ namespace TwitchBotManager.Code.Classes {
 
 				return output;
 			}
+		}
+
+		public void ProcessIDGeneration() {
+			void ProcessIDs(IEnumerable<SongDataContainer> containers) {
+				foreach (SongDataContainer container in containers) {
+					if (string.IsNullOrEmpty(container.UniqueSystemID) || CheckCodeIsInSystem(container.UniqueSystemID)) {
+						container.UniqueSystemID = GenerateIDCode();
+					}
+				}
+			}
+			ProcessIDs(SecondarySongPlaylist.Keys);
+			ProcessIDs(BrokenLinklist);
+		}
+
+		readonly Random IDRandomEntity = new Random();
+		public string GenerateIDCode() {
+			const string availableChars = "0123456789qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM";
+			const int length = 11;
+
+			string buildID() {
+				StringBuilder str_build = new StringBuilder();
+
+				for (int i = 0; i < length; i++) {
+					var c = availableChars[IDRandomEntity.Next(0, availableChars.Length)];
+					str_build.Append(c);
+				}
+				return str_build.ToString();
+			}
+
+			string ID = "";
+
+			do {
+				ID = buildID();
+			} while (CheckCodeIsInSystem(ID));
+
+			return ID;
+		}
+
+		public bool CheckCodeIsInSystem(string ID) {
+			if (string.IsNullOrEmpty(ID)) {
+				return false;
+			}
+			return SecondarySongPlaylist.Keys.Any(e => !string.IsNullOrEmpty(e.UniqueSystemID) && e.UniqueSystemID.Equals(ID)) || BrokenLinklist.Any(e => !string.IsNullOrEmpty(e.UniqueSystemID) && e.UniqueSystemID.Equals(ID));
 		}
 	}
 }

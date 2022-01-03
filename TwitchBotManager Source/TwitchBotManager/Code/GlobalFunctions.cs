@@ -40,7 +40,10 @@ namespace TwitchBotManager.Code.Classes {
 			if (!File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\MediaVolume.txt")) {
 				File.Create(Directory.GetCurrentDirectory() + @"\Outputs\MediaVolume.txt").Close();
 			}
-			
+			if (!File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\Settings.txt")) {
+				File.Create(Directory.GetCurrentDirectory() + @"\Outputs\Settings.txt").Close();
+			}
+
 		}
 
 		public static (string, string, string, string) LoadLoginFromFile() {

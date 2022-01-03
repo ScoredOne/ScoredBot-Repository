@@ -47,6 +47,12 @@ namespace TwitchBotManager.Code.Classes {
 		public string DirLocation { get; private set; }
 
 		/// <summary>
+		/// Full Cached Location including program directory
+		/// </summary>
+		[JsonIgnore]
+		public string FullDirLocation => Directory.GetCurrentDirectory() + DirLocation;
+
+		/// <summary>
 		/// Last ping to youtube
 		/// </summary>
 		public DateTime LastValidPing { get; private set; }
@@ -68,11 +74,20 @@ namespace TwitchBotManager.Code.Classes {
 		/// </summary>
 		public bool LocalFile { get; private set; }
 
-		public bool AudioCached() => File.Exists(DirLocation);
+		/// <summary>
+		/// ID generated for the system
+		/// </summary>
+		[JsonIgnore]
+		public string UniqueSystemID { get; set; }
+
+		public bool AudioCached() => File.Exists(FullDirLocation);
 
 		public TimeSpan LengthInTime => TimeSpan.FromSeconds(LengthSec);
 
 		private SongDataContainer() { }
+
+		[JsonIgnore]
+		public bool DownloadWorking;
 
 		/// <summary>
 		/// Song Constructor for local/secondary playlist files
@@ -83,7 +98,7 @@ namespace TwitchBotManager.Code.Classes {
 				OriginalRequester = requester,
 				Title = title,
 				LengthSec = length,
-				DirLocation = dirLocation,
+				DirLocation = dirLocation.Replace(Directory.GetCurrentDirectory(), ""),
 				LastValidPing = lastpingdate,
 				LastPingFailed = failedping,
 				LocalFile = local
@@ -154,12 +169,14 @@ namespace TwitchBotManager.Code.Classes {
 				{ nameof(CurrentRequesters), CurrentRequesters.MergeList('/') },
 				{ nameof(Title), Title },
 				{ nameof(LengthSec), LengthSec.ToString() },
+				{ nameof(LengthInTime), LengthInTime.ToString() },
 				{ nameof(DirLocation), DirLocation },
 				{ nameof(LastValidPing), LastValidPing.ToString() },
 				{ nameof(LastPingFailed), LastPingFailed.ToString() },
 				{ nameof(PingValid), PingValid.ToString() },
 				{ nameof(LocalFile), LocalFile.ToString() },
-				{ nameof(AudioCached), AudioCached().ToString() }
+				{ nameof(AudioCached), AudioCached().ToString() },
+				{ nameof(UniqueSystemID), UniqueSystemID }
 			};
 		}
 
@@ -325,16 +342,19 @@ namespace TwitchBotManager.Code.Classes {
 
 			if (GlobalFunctions.GetYouTubeVideoID(Link, out string ID)) {
 				if (AudioCached()) {
-					File.Delete(DirLocation);
+					File.Delete(FullDirLocation);
 				}
 				RunResult<string> Youtubedata = null;
 				Exception exception = null;
+				DownloadWorking = true;
 
 				try {
 					Youtubedata = await YoutubeDLWorker.RunAudioDownload("https://www.youtube.com/watch?v=" + ID, type);
 				} catch (Exception e) {
 					exception = e;
 				}
+
+				DownloadWorking = false;
 
 				if (exception != null) {
 					MainForm.StaticPostToDebug($"{Title} : Error attempting to download song data. : {exception.Message}");
@@ -372,7 +392,7 @@ namespace TwitchBotManager.Code.Classes {
 
 					//Find filename by ID then rename that entry to new one, need to change special characters before that too
 
-					DirLocation = newFilename;
+					DirLocation = newFilename.Replace(Directory.GetCurrentDirectory(), "");
 					LastValidPing = DateTime.Now;
 					LastPingFailed = false;
 				} else {
@@ -405,7 +425,7 @@ namespace TwitchBotManager.Code.Classes {
 				int attempts = 0;
 				do {
 					try {
-						File.Delete(DirLocation);
+						File.Delete(FullDirLocation);
 						DirLocation = "";
 						pass = true;
 					} catch {
