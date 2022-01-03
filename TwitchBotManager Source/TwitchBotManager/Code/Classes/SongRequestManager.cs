@@ -909,11 +909,12 @@ namespace TwitchBotManager.Code.Classes {
 					return true;
 				}
 
-				SongDataContainer song = await SongDataContainer.CreateNewContainer(address, requester, YoutubeDLWorker, true);
+				SongDataContainer song = await SongDataContainer.CreateNewContainer(address, requester, YoutubeDLWorker);
 				song.UniqueSystemID = GenerateIDCode();
 				if (song.PingValid) {
 					SecondarySongPlaylist.Add(song, false);
 					WriteSingleSongToFile(song);
+					await song.GetYouTubeAudioData(YoutubeDLWorker);
 					return true;
 				} else {
 					MainForm.StaticPostToDebug($"YouTube link: {address} : Invalid. Ping returned Errors.");

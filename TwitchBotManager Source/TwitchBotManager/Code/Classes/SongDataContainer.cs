@@ -271,6 +271,7 @@ namespace TwitchBotManager.Code.Classes {
 				Exception exception = null;
 
 				try {
+					MainForm.StaticPostToDebug($"GetYouTubeVideoInformation: Download of {(string.IsNullOrEmpty(Title) ? Link : Title)} started.");
 					Youtubedata = await YoutubeDLWorker.RunVideoDataFetch("https://www.youtube.com/watch?v=" + youtubeMatch
 					, overrideOptions: new YoutubeDLSharp.Options.OptionSet() {
 						DumpJson = true,

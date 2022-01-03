@@ -605,6 +605,7 @@ namespace TwitchBotManager {
 		#region ### SECONDARY SONG MANAGER TAB ###
 
 		public void UpdateSecPlaylistTabLists() {
+
 			if (!songRequestManager.IsLoading) {
 				if (!string.IsNullOrEmpty(SearchInputBox.Text) && (SongTitleCheckBox.Checked || YTCheckBox.Checked || RequesterCheckBox.Checked)) {
 					SecondarySongs = songRequestManager.GetSecondaryPlaylist().Where(e => {
@@ -666,6 +667,8 @@ namespace TwitchBotManager {
 					e.DataSource = new List<string>();
 				});
 			}
+
+			LoadedSongsListBox.SelectedIndex = BrokenSongsListBox.SelectedIndex = -1;
 		}
 
 		private void RemoveSecondarySongButton_Click(object sender, EventArgs e) {
@@ -744,6 +747,9 @@ namespace TwitchBotManager {
 					$"Ping Valid:\t{data.Get(nameof(SongDataContainer.PingValid))}",
 					$"Last Valid Ping:\t{data.Get(nameof(SongDataContainer.LastValidPing))}",
 				};
+			} else if (LoadedSongsListBox.SelectedIndex == -1) {
+				SecondaryTextBoxAddField.Text = "";
+				SongDetailsListBox.DataSource = new List<string>() { };
 			}
 		}
 
@@ -760,6 +766,9 @@ namespace TwitchBotManager {
 					$"Ping Valid:\t{data.Get(nameof(SongDataContainer.PingValid))}",
 					$"Last Valid Ping:\t{data.Get(nameof(SongDataContainer.LastValidPing))}",
 				};
+			} else if (BrokenSongsListBox.SelectedIndex == -1) {
+				SecondaryTextBoxAddField.Text = "";
+				SongDetailsListBox.DataSource = new List<string>() { };
 			}
 		}
 
