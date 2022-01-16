@@ -64,6 +64,7 @@ namespace TwitchBotManager {
 			this.RemoveSongFromSecondaryButton = new System.Windows.Forms.Button();
 			this.SkipSongButton = new System.Windows.Forms.Button();
 			this.SecondaryPlaylistManagementTab = new System.Windows.Forms.TabPage();
+			this.SongDetailsListBox = new System.Windows.Forms.ListBox();
 			this.RequesterCheckBox = new System.Windows.Forms.CheckBox();
 			this.YTCheckBox = new System.Windows.Forms.CheckBox();
 			this.label5 = new System.Windows.Forms.Label();
@@ -91,7 +92,9 @@ namespace TwitchBotManager {
 			this.ConnectionLabel = new System.Windows.Forms.Label();
 			this.CurrentSongRequestLabel = new System.Windows.Forms.Label();
 			this.MainProgressBar = new System.Windows.Forms.ProgressBar();
-			this.SongDetailsListBox = new System.Windows.Forms.ListBox();
+			this.MaxRequestsLabel = new System.Windows.Forms.Label();
+			this.DecreaseMaxRequestsButton = new System.Windows.Forms.Button();
+			this.IncreaseMaxRequestsButton = new System.Windows.Forms.Button();
 			this.LoadingBar.SuspendLayout();
 			this.MainTabControl.SuspendLayout();
 			this.SongRequestTab.SuspendLayout();
@@ -417,6 +420,9 @@ namespace TwitchBotManager {
 			// 
 			// SongRequestTab
 			// 
+			this.SongRequestTab.Controls.Add(this.IncreaseMaxRequestsButton);
+			this.SongRequestTab.Controls.Add(this.DecreaseMaxRequestsButton);
+			this.SongRequestTab.Controls.Add(this.MaxRequestsLabel);
 			this.SongRequestTab.Controls.Add(this.label2);
 			this.SongRequestTab.Controls.Add(this.CurrentSongDefaultLabel);
 			this.SongRequestTab.Controls.Add(this.RemoveSongFromSecondaryButton);
@@ -506,6 +512,16 @@ namespace TwitchBotManager {
 			this.SecondaryPlaylistManagementTab.TabIndex = 3;
 			this.SecondaryPlaylistManagementTab.Text = "Sec\' Playlist Management";
 			this.SecondaryPlaylistManagementTab.UseVisualStyleBackColor = true;
+			// 
+			// SongDetailsListBox
+			// 
+			this.SongDetailsListBox.FormattingEnabled = true;
+			this.SongDetailsListBox.HorizontalScrollbar = true;
+			this.SongDetailsListBox.Location = new System.Drawing.Point(547, 269);
+			this.SongDetailsListBox.Name = "SongDetailsListBox";
+			this.SongDetailsListBox.SelectionMode = System.Windows.Forms.SelectionMode.None;
+			this.SongDetailsListBox.Size = new System.Drawing.Size(559, 121);
+			this.SongDetailsListBox.TabIndex = 33;
 			// 
 			// RequesterCheckBox
 			// 
@@ -789,15 +805,36 @@ namespace TwitchBotManager {
 			this.MainProgressBar.Size = new System.Drawing.Size(100, 23);
 			this.MainProgressBar.TabIndex = 21;
 			// 
-			// SongDetailsListBox
+			// MaxRequestsLabel
 			// 
-			this.SongDetailsListBox.FormattingEnabled = true;
-			this.SongDetailsListBox.HorizontalScrollbar = true;
-			this.SongDetailsListBox.Location = new System.Drawing.Point(547, 269);
-			this.SongDetailsListBox.Name = "SongDetailsListBox";
-			this.SongDetailsListBox.SelectionMode = System.Windows.Forms.SelectionMode.None;
-			this.SongDetailsListBox.Size = new System.Drawing.Size(559, 121);
-			this.SongDetailsListBox.TabIndex = 33;
+			this.MaxRequestsLabel.AutoSize = true;
+			this.MaxRequestsLabel.Location = new System.Drawing.Point(270, 22);
+			this.MaxRequestsLabel.Name = "MaxRequestsLabel";
+			this.MaxRequestsLabel.Size = new System.Drawing.Size(83, 13);
+			this.MaxRequestsLabel.TabIndex = 25;
+			this.MaxRequestsLabel.Text = "Request Limit: 5";
+			// 
+			// DecreaseMaxRequestsButton
+			// 
+			this.DecreaseMaxRequestsButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.DecreaseMaxRequestsButton.Location = new System.Drawing.Point(365, 16);
+			this.DecreaseMaxRequestsButton.Name = "DecreaseMaxRequestsButton";
+			this.DecreaseMaxRequestsButton.Size = new System.Drawing.Size(25, 25);
+			this.DecreaseMaxRequestsButton.TabIndex = 26;
+			this.DecreaseMaxRequestsButton.Text = "-";
+			this.DecreaseMaxRequestsButton.UseVisualStyleBackColor = true;
+			this.DecreaseMaxRequestsButton.Click += new System.EventHandler(this.DecreaseMaxRequestsButton_Click);
+			// 
+			// IncreaseMaxRequestsButton
+			// 
+			this.IncreaseMaxRequestsButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.IncreaseMaxRequestsButton.Location = new System.Drawing.Point(396, 16);
+			this.IncreaseMaxRequestsButton.Name = "IncreaseMaxRequestsButton";
+			this.IncreaseMaxRequestsButton.Size = new System.Drawing.Size(25, 25);
+			this.IncreaseMaxRequestsButton.TabIndex = 27;
+			this.IncreaseMaxRequestsButton.Text = "+";
+			this.IncreaseMaxRequestsButton.UseVisualStyleBackColor = true;
+			this.IncreaseMaxRequestsButton.Click += new System.EventHandler(this.IncreaseMaxRequestsButton_Click);
 			// 
 			// MainForm
 			// 
@@ -904,6 +941,9 @@ namespace TwitchBotManager {
 		private System.Windows.Forms.Label label4;
 		private System.Windows.Forms.Label label3;
 		private System.Windows.Forms.ListBox SongDetailsListBox;
+		private System.Windows.Forms.Label MaxRequestsLabel;
+		private System.Windows.Forms.Button IncreaseMaxRequestsButton;
+		private System.Windows.Forms.Button DecreaseMaxRequestsButton;
 	}
 }
 

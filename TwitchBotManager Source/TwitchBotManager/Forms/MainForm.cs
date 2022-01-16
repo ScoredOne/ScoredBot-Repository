@@ -59,6 +59,8 @@ namespace TwitchBotManager {
 
 		public static bool IsExiting { get; private set; } = false;
 
+		public (string UserName, string OAuth, string Secret, string Target) TwitchBotLoginDetails { get; private set; } // UserName, oauth:xxxxxxxxxxxxxxxxxxxxxxxxxxxxx, TargetChannel
+
 		private Timer UpdateHandler;
 
 		private bool Initialized;
@@ -66,8 +68,6 @@ namespace TwitchBotManager {
 
 		private TwitchBot twitchBot;
 		private TwitchAPIInterfaceObject twitchAPI;
-
-		public (string UserName, string OAuth, string Secret, string Target) TwitchBotLoginDetails { get; private set; } // UserName, oauth:xxxxxxxxxxxxxxxxxxxxxxxxxxxxx, TargetChannel
 
 		private SongRequestManager songRequestManager;
 
@@ -107,6 +107,7 @@ namespace TwitchBotManager {
 			songRequestManager.OnBuffering += SongRequestManager_OnBuffering;
 			songRequestManager.OnError += SongRequestManager_OnError;
 			songRequestManager.OnVolumeUpdate += SongRequestManager_OnVolumeUpdate;
+			songRequestManager.OnMaxRequestsUpdate += SongRequestManager_OnMaxRequestsUpdate;
 			songRequestManager.OnSecondaryPlaylistUpdated += SongRequestManager_OnSecondaryPlaylistUpdated;
 			songRequestManager.OnProgressbarUpdate += SongRequestManager_OnProgressbarUpdate;
 			songRequestManager.OnSongRequestOutputChanged += SongRequestManager_OnSongRequestOutputChanged;
@@ -115,6 +116,8 @@ namespace TwitchBotManager {
 			songRequestManager.Initialize();
 
 			VolumeLabel.Text = songRequestManager.PlayerVolumeTextOutput;
+
+			MaxRequestsLabel.Text = $"Request Limit: {songRequestManager.MaxUserRequests}";
 
 			TwitchBotLoginDetails = GlobalFunctions.LoadLoginFromFile();
 
@@ -126,7 +129,9 @@ namespace TwitchBotManager {
 		}
 
 		private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e) {
-			File.WriteAllText(Directory.GetCurrentDirectory() + @"\Outputs\CRASH(" + DateTime.Now.ToString("yyyy-MM-dd_hh-mmtt") + ").txt", ((Exception)e.ExceptionObject).StackTrace);
+			Exception crash = (Exception)e.ExceptionObject;
+			string output = $"{crash.Message}{Environment.NewLine}{Environment.NewLine}{crash.StackTrace}{Environment.NewLine}{Environment.NewLine}{crash.InnerException}{Environment.NewLine}{Environment.NewLine}{crash.Data}";
+			File.WriteAllText(Directory.GetCurrentDirectory() + @"\Outputs\CRASH(" + DateTime.Now.ToString("yyyy-MM-dd_hh-mmtt") + ").txt", output);
 		}
 
 		private void Form1_Load(object sender, EventArgs e) {
@@ -293,7 +298,6 @@ namespace TwitchBotManager {
 			} else if (twitchBot.IsActive) {
 				if (twitchBot.IsConnected) {
 					twitchBot.DisconnectFromChat();
-					TwitchBot_OnClearSongRequests(null, null);
 					songRequestManager.TakingSongRequests = false;
 
 					PostToDebug.Invoke("Bot Stopped");
@@ -306,18 +310,18 @@ namespace TwitchBotManager {
 			BotStartStop.Enabled = true;
 		}
 
-		private void TwitchBot_OnConnectionError(object sender, TwitchLib.Client.Events.OnConnectionErrorArgs e) {
+		private void TwitchBot_OnConnectionError(object sender, EventArgs e) {
 			CancellationTokenSource cancellationToken = new CancellationTokenSource(60000);
-			Task thread = new Task(async () => {
+			Thread thread = new Thread(async () => {
 				AppWorking = true;
 				do {
 					twitchBot.ReconnectToChat();
-					Console.WriteLine("Attempting to reconnect bot.");
+					StaticPostToDebug("Attempting to reconnect bot.");
 					await Task.Delay(1000);
 				} while (!twitchBot.IsConnected && !cancellationToken.IsCancellationRequested);
 
 				if (cancellationToken.IsCancellationRequested && !twitchBot.IsConnected) {
-					Console.WriteLine("Bot reconnection failed.");
+					StaticPostToDebug("Bot reconnection failed.");
 					MessageBox.Show("The bot failed to reconnect to Twitch.", "Connection Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
 				}
 
@@ -329,12 +333,11 @@ namespace TwitchBotManager {
 		public void UpdateSongListOutput() {
 			SongRequestList.ThreadSafeAction(e => e.Items.Clear());
 
-			Dictionary<int, string> currentlist = songRequestManager.GetCurrentPlaylist(true);
-			foreach (int index in currentlist.Keys.OrderBy(e => e)) {
-				if (currentlist.TryGetValue(index, out string value)) {
-					SongRequestList.ThreadSafeAction(e => e.Items.Add($"#{index + 1} :: {value}"));
-					SongRequestList.ThreadSafeAction(e => e.Items.Add(""));
-				}
+			List<string> currentlist = songRequestManager.GetCurrentPlaylist(true);
+			int count = 0;
+			foreach (string song in currentlist) {
+				SongRequestList.ThreadSafeAction(e => e.Items.Add($"#{++count} :: {song}"));
+				SongRequestList.ThreadSafeAction(e => e.Items.Add(""));
 			}
 		}
 
@@ -433,14 +436,13 @@ namespace TwitchBotManager {
 		}
 
 		private void TwitchBot_OnPrintSongList(object sender, BotCommandContainer e) {
-			Dictionary<int, string> songlistout = songRequestManager.GetCurrentPlaylist();
+			List<string> songlistout = songRequestManager.GetCurrentPlaylist();
 
 			string Output = songlistout.Count > 4 ? "Song List, Next 5 songs :: " : $"Song List, Next {songlistout.Count} songs :: ";
+			int count = 0;
 
-			for (int x = 0; x < 5 && x < songlistout.Count; x++) {
-				if (songlistout.TryGetValue(x, out string value)) {
-					Output += $"#{x} -- {value} || ";
-				}
+			foreach (string song in songlistout) {
+				Output += $"#{++count} -- {song} || ";
 			}
 
 			twitchBot.SendMessageToTwitchChat(Output);
@@ -482,9 +484,7 @@ namespace TwitchBotManager {
 		}
 
 		private void TwitchBot_OnMessageReceived(object sender, string e) {
-			if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\CurrentChatLog.txt")) {
-				File.AppendAllText(Directory.GetCurrentDirectory() + @"\Outputs\CurrentChatLog.txt", e + Environment.NewLine);
-			}
+			File.AppendAllText(Directory.GetCurrentDirectory() + @"\Outputs\CurrentChatLog.txt", e + Environment.NewLine);
 		}
 
 		#endregion
@@ -541,6 +541,37 @@ namespace TwitchBotManager {
 			}
 
 			PostToDebug.Invoke("Volume set to " + songRequestManager.CurrentVolume.ToString());
+		}
+
+		#endregion
+
+		#region ### MAX REQUEST BUTTONS ###
+		private void DecreaseMaxRequestsButton_Click(object sender, EventArgs e) {
+			if (songRequestManager.MaxUserRequests > 1) {
+				songRequestManager.MaxUserRequests--;
+			} else {
+				songRequestManager.MaxUserRequests = 1;
+			}
+
+			if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\MaxRequests.txt")) {
+				File.WriteAllText(Directory.GetCurrentDirectory() + @"\Outputs\MaxRequests.txt", songRequestManager.MaxUserRequests.ToString());
+			}
+
+			PostToDebug.Invoke("Max User Requests set to " + songRequestManager.CurrentVolume.ToString());
+		}
+
+		private void IncreaseMaxRequestsButton_Click(object sender, EventArgs e) {
+			if (songRequestManager.MaxUserRequests < 100) {
+				songRequestManager.MaxUserRequests++;
+			} else {
+				songRequestManager.MaxUserRequests = 100;
+			}
+
+			if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\MaxRequests.txt")) {
+				File.WriteAllText(Directory.GetCurrentDirectory() + @"\Outputs\MaxRequests.txt", songRequestManager.MaxUserRequests.ToString());
+			}
+
+			PostToDebug.Invoke("Max User Requests set to " + songRequestManager.CurrentVolume.ToString());
 		}
 
 		#endregion
@@ -605,7 +636,6 @@ namespace TwitchBotManager {
 		#region ### SECONDARY SONG MANAGER TAB ###
 
 		public void UpdateSecPlaylistTabLists() {
-
 			if (!songRequestManager.IsLoading) {
 				if (!string.IsNullOrEmpty(SearchInputBox.Text) && (SongTitleCheckBox.Checked || YTCheckBox.Checked || RequesterCheckBox.Checked)) {
 					SecondarySongs = songRequestManager.GetSecondaryPlaylist().Where(e => {
@@ -849,7 +879,11 @@ namespace TwitchBotManager {
 		}
 
 		private void SongRequestManager_OnVolumeUpdate(object sender, int e) {
-			VolumeLabel.ThreadSafeAction(e => e.Text = "Volume: " + e.ToString());
+			VolumeLabel.ThreadSafeAction(v => v.Text = $"Volume: {e}");
+		}
+
+		private void SongRequestManager_OnMaxRequestsUpdate(object sender, int e) {
+			MaxRequestsLabel.ThreadSafeAction(v => v.Text = $"Request Limit: {e}");
 		}
 
 		private void SongRequestManager_OnError(object sender, string e) {
@@ -886,5 +920,6 @@ namespace TwitchBotManager {
 		#endregion
 
 		#endregion
+
 	}
 }

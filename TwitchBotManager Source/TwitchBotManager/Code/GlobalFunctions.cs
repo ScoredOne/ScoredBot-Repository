@@ -40,6 +40,9 @@ namespace TwitchBotManager.Code.Classes {
 			if (!File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\MediaVolume.txt")) {
 				File.Create(Directory.GetCurrentDirectory() + @"\Outputs\MediaVolume.txt").Close();
 			}
+			if (!File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\MaxRequests.txt")) {
+				File.Create(Directory.GetCurrentDirectory() + @"\Outputs\MaxRequests.txt").Close();
+			}
 			if (!File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\Settings.txt")) {
 				File.Create(Directory.GetCurrentDirectory() + @"\Outputs\Settings.txt").Close();
 			}
@@ -80,6 +83,22 @@ namespace TwitchBotManager.Code.Classes {
 			}
 
 			return 100;
+		}
+
+		public static int LoadMediaMaxRequests() {
+			if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\MaxRequests.txt")) {
+				if (int.TryParse(File.ReadAllText(Directory.GetCurrentDirectory() + @"\Outputs\MaxRequests.txt"), out int value)) {
+					if (value > 100) {
+						return 100;
+					} else if (value < 0) {
+						return 0;
+					} else {
+						return value;
+					}
+				}
+			}
+
+			return 5;
 		}
 
 		/// <summary>

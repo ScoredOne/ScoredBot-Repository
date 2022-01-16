@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 
@@ -24,12 +25,6 @@ namespace TwitchBotManager.Code.Classes {
 		/// User who requested song to the bot originally
 		/// </summary>
 		public string OriginalRequester { get; set; }
-
-		/// <summary>
-		/// Users currently requesting the song 
-		/// </summary>
-		[JsonIgnore]
-		public readonly LinkedList<string> CurrentRequesters = new LinkedList<string>();
 
 		/// <summary>
 		/// Song Title
@@ -84,10 +79,19 @@ namespace TwitchBotManager.Code.Classes {
 
 		public TimeSpan LengthInTime => TimeSpan.FromSeconds(LengthSec);
 
+		[JsonIgnore]
+		public Task<RunResult<VideoData>> InformationAquireTask { get; private set; }
+
+		[JsonIgnore]
+		public Task<RunResult<string>> VideoAquireTask { get; private set; }
+
 		private SongDataContainer() { }
 
 		[JsonIgnore]
 		public bool DownloadWorking;
+
+		[JsonIgnore]
+		public string ErrorMessage { get; private set; } = "";
 
 		/// <summary>
 		/// Song Constructor for local/secondary playlist files
@@ -118,7 +122,6 @@ namespace TwitchBotManager.Code.Classes {
 				OriginalRequester = requester,
 				LocalFile = false
 			};
-			container.CurrentRequesters.AddFirst(requester);
 
 			if (youtubeDL == null) {
 				return container;
@@ -126,7 +129,7 @@ namespace TwitchBotManager.Code.Classes {
 
 			await container.GetYouTubeVideoInformation(youtubeDL);
 
-			if (getaudiodata) {
+			if (getaudiodata && container.PingValid) {
 				await container.GetYouTubeAudioData(youtubeDL);
 			}
 
@@ -139,21 +142,19 @@ namespace TwitchBotManager.Code.Classes {
 		/// <param name="Requester"> -1 = Original Requester, 0+ gets Current Requester at index </param>
 		/// <param name="newLines"></param>
 		/// <returns></returns>
-		public string OutputString(int Requester, bool newLines = false) {
+		public string OutputString(string Requester = "", bool newLines = false) {
 			string output = "";
 
 			output += $"{(newLines ? Environment.NewLine : string.Empty)}|# Title #| : {(string.IsNullOrEmpty(Title) ? "#TITLE MISSING#" : Title)} ";
 
 			output += $"{(newLines ? Environment.NewLine : string.Empty)}|# Link #| : {(string.IsNullOrEmpty(Link) ? "#LINK MISSING#" : Link)} ";
 
-			if (Requester == -1) {
+			if (string.IsNullOrEmpty(Requester)) {
 				output += $"{(newLines ? Environment.NewLine : string.Empty)}|# Requester #| : {(string.IsNullOrEmpty(OriginalRequester) ? "#REQUESTER MISSING#" : OriginalRequester)} ";
-			} else if (Requester < CurrentRequesters.Count) {
-				output += $"{(newLines ? Environment.NewLine : string.Empty)}|# Requester #| : {CurrentRequesters.ElementAt(Requester)} ";
 			} else {
-				throw new ArgumentOutOfRangeException("Requester Value Exceeds CurrentRequesters.Count");
+				output += $"{(newLines ? Environment.NewLine : string.Empty)}|# Requester #| : {Requester} ";
 			}
-
+			
 			if (LengthSec > 0) {
 				output += $"{(newLines ? Environment.NewLine : string.Empty)}|# Duration #| : {LengthInTime} ";
 			}
@@ -166,7 +167,6 @@ namespace TwitchBotManager.Code.Classes {
 				{ nameof(Link), Link },
 				{ nameof(ID), ID },
 				{ nameof(OriginalRequester), OriginalRequester },
-				{ nameof(CurrentRequesters), CurrentRequesters.MergeList('/') },
 				{ nameof(Title), Title },
 				{ nameof(LengthSec), LengthSec.ToString() },
 				{ nameof(LengthInTime), LengthInTime.ToString() },
@@ -249,30 +249,32 @@ namespace TwitchBotManager.Code.Classes {
 			}
 		}
 
-		public async Task<bool> GetYouTubeVideoInformation(YoutubeDL YoutubeDLWorker, bool Force = false) {
+		public async Task GetYouTubeVideoInformation(YoutubeDL YoutubeDLWorker, bool Force = false) {
 			if (YoutubeDLWorker == null) {
 				throw new NullReferenceException("GetYouTubeVideoInformation: YoutubeDLWorker was provided null");
 			}
 
-			if (LocalFile) {
+			if (InformationAquireTask != null) {
+				await InformationAquireTask;
+				return;
+			} else if (LocalFile) {
 				MainForm.StaticPostToDebug($"GetYouTubeVideoInformation: Skipped {(string.IsNullOrEmpty(Title) ? Link : Title)} data, Song is Local.");
-				return true;
-			}
-
-			if (!Force && PingValid) {
+				return;
+			} else if (!Force && PingValid) {
 				MainForm.StaticPostToDebug($"GetYouTubeVideoInformation: {(string.IsNullOrEmpty(Title) ? Link : Title)} is still within valid period, download canceled.");
-				return true;
+				return;
 			} else if (Force && PingValid) {
 				MainForm.StaticPostToDebug($"GetYouTubeVideoInformation: Forced download of {(string.IsNullOrEmpty(Title) ? Link : Title)} data.");
 			}
 
+			DownloadWorking = true;
 			if (GlobalFunctions.GetYouTubeVideoID(Link, out string youtubeMatch)) {
 				RunResult<VideoData> Youtubedata = null;
 				Exception exception = null;
 
 				try {
 					MainForm.StaticPostToDebug($"GetYouTubeVideoInformation: Download of {(string.IsNullOrEmpty(Title) ? Link : Title)} started.");
-					Youtubedata = await YoutubeDLWorker.RunVideoDataFetch("https://www.youtube.com/watch?v=" + youtubeMatch
+					InformationAquireTask = YoutubeDLWorker.RunVideoDataFetch("https://www.youtube.com/watch?v=" + youtubeMatch
 					, overrideOptions: new YoutubeDLSharp.Options.OptionSet() {
 						DumpJson = true,
 						DumpSingleJson = true,
@@ -285,19 +287,28 @@ namespace TwitchBotManager.Code.Classes {
 						WriteAllThumbnails = false,
 						WriteThumbnail = false
 					});
+					Youtubedata = await InformationAquireTask;
 				} catch (Exception e) {
 					exception = e;
 				}
 
 				if (exception != null) {
-					MainForm.StaticPostToDebug($"{Link} : Error attempting to download song information. : {exception.Message}");
+					MainForm.StaticPostToDebug($"{Link} : Error attempting to download song information. : {ErrorMessage = exception.Message}");
 					LastPingFailed = true;
 				} else if (Youtubedata != null && Youtubedata.Success) {
 					Title = Youtubedata.Data.Title;
 					LengthSec = (int)Youtubedata.Data.Duration;
-					LastValidPing = DateTime.Now;
-					LastPingFailed = false;
-					MainForm.StaticPostToDebug($"Secondary Song Info Downloaded... {Title}");
+					if (LengthSec > 900) {
+						LastPingFailed = true;
+						ErrorMessage = "Video Length exceeds set limit of 15 Mins.";
+
+						MainForm.StaticPostToDebug($"Video Length exceeds set limit of 15 Mins.... {Title}");
+					} else {
+						LastValidPing = DateTime.Now;
+						LastPingFailed = false;
+
+						MainForm.StaticPostToDebug($"Secondary Song Info Downloaded... {Title}");
+					}
 				} else {
 					if (Youtubedata == null) {
 						MainForm.StaticPostToDebug($"https://www.youtube.com/watch?v={youtubeMatch} : YoutubeDLWorker Crashed Out");
@@ -306,40 +317,56 @@ namespace TwitchBotManager.Code.Classes {
 						foreach (string error in Youtubedata.ErrorOutput) {
 							errors += error + " :: ";
 						}
+						//This video is not available
+						if (errors.Contains("This video is not available")) {
+							ErrorMessage = "Video not available, it may not be available at streamers location.";
+						}
 						MainForm.StaticPostToDebug(errors);
 					}
 					LastPingFailed = true;
 				}
 
 			} else {
-				string errorMessage = $"GetYouTubeVideoInformation using link: {Link} Failed, link was not recognised by Regex.";
-				MainForm.StaticPostToDebug(errorMessage);
+				ErrorMessage = $"{Link} Failed, link was not recognised by Regex.";
+				MainForm.StaticPostToDebug($"GetYouTubeVideoInformation using link: {Link} Failed, link was not recognised by Regex.");
 				LastPingFailed = true;
 			}
 
-			return PingValid;
+			DownloadWorking = false;
+			InformationAquireTask = null;
+			return;
 		}
 
-		public async Task<bool> GetYouTubeAudioData(YoutubeDL YoutubeDLWorker, YoutubeDLSharp.Options.AudioConversionFormat type = YoutubeDLSharp.Options.AudioConversionFormat.Mp3, bool Force = false) {
+		public async Task GetYouTubeAudioData(YoutubeDL YoutubeDLWorker, YoutubeDLSharp.Options.AudioConversionFormat type = YoutubeDLSharp.Options.AudioConversionFormat.Mp3, bool Force = false) {
 			if (YoutubeDLWorker == null) {
 				throw new NullReferenceException("GetYouTubeAudioData: YoutubeDLWorker was provided null");
 			}
 
+			if (VideoAquireTask != null) {
+				await VideoAquireTask;
+				return;
+			}
+
 			if (LocalFile) {
 				MainForm.StaticPostToDebug($"GetYouTubeVideoInformation: Skipped {(string.IsNullOrEmpty(Title) ? Link : Title)} download, Song is Local.");
-				return true;
+				return;
 			}
 
 			if (string.IsNullOrEmpty(Title)) {
-				await GetYouTubeVideoInformation(YoutubeDLWorker);
+				if (InformationAquireTask != null) {
+					await InformationAquireTask;
+				} else {
+					await GetYouTubeVideoInformation(YoutubeDLWorker);
+				}
 			}
 
 			if (!Force && AudioCached()) {
 				MainForm.StaticPostToDebug($"GetYouTubeAudioData: {(string.IsNullOrEmpty(Title) ? Link : Title)} Audio found, download canceled.");
-				return true;
+				return;
 			} else if (Force) {
 				MainForm.StaticPostToDebug($"GetYouTubeVideoInformation: Forced download of {(string.IsNullOrEmpty(Title) ? Link : Title)} Audio");
 			}
+			DownloadWorking = true;
 
 			if (GlobalFunctions.GetYouTubeVideoID(Link, out string ID)) {
 				if (AudioCached()) {
@@ -347,18 +374,16 @@ namespace TwitchBotManager.Code.Classes {
 				}
 				RunResult<string> Youtubedata = null;
 				Exception exception = null;
-				DownloadWorking = true;
 
 				try {
-					Youtubedata = await YoutubeDLWorker.RunAudioDownload("https://www.youtube.com/watch?v=" + ID, type);
+					VideoAquireTask = YoutubeDLWorker.RunAudioDownload("https://www.youtube.com/watch?v=" + ID, type);
+					Youtubedata = await VideoAquireTask;
 				} catch (Exception e) {
 					exception = e;
 				}
 
-				DownloadWorking = false;
-
 				if (exception != null) {
-					MainForm.StaticPostToDebug($"{Title} : Error attempting to download song data. : {exception.Message}");
+					MainForm.StaticPostToDebug($"{Title} : Error attempting to download song data. : {ErrorMessage = exception.Message}");
 					LastPingFailed = true;
 				} else if (Youtubedata != null && Youtubedata.Success) {
 					string extension = $".{type.ToString().ToLower()}";
@@ -411,13 +436,13 @@ namespace TwitchBotManager.Code.Classes {
 				}
 
 			} else {
-				string errorMessage = $"GetYouTubeAudioData using link: {Link} Failed, link was not recognised by Regex.";
-				MainForm.StaticPostToDebug(errorMessage);
-				Console.WriteLine(errorMessage);
+				ErrorMessage = $"{Link} Failed, link was not recognised by Regex.";
+				MainForm.StaticPostToDebug($"GetYouTubeAudioData using link: {Link} Failed, link was not recognised by Regex.");
 				LastPingFailed = true;
 			}
 
-			return AudioCached();
+			VideoAquireTask = null;
+			DownloadWorking = false;
 		}
 
 		public async Task DeleteCache() {

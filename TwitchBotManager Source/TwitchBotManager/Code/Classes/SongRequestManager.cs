@@ -16,6 +16,26 @@ using YoutubeDLSharp;
 
 namespace TwitchBotManager.Code.Classes {
 
+	/*
+	Remove requesters (except original) from song data container
+	Create struct to store song data + current requester (to create unique objects to handle instead of reusing the same song data)
+	New song data containers for the song list have requesters set to 
+	 */
+
+	public class TwitchRequestedSong {
+		public SongDataContainer SongData { get; private set; }
+		public string Requester { get; private set; }
+
+		public TwitchRequestedSong(SongDataContainer Song, string requester) {
+			SongData = Song;
+			Requester = requester;
+		}
+
+		public string OutputString(bool newLines = false) {
+			return SongData.OutputString(Requester, newLines);
+		}
+	}
+
 	public class SongRequestManager {
 
 		#region ### Variables ###
@@ -31,12 +51,12 @@ namespace TwitchBotManager.Code.Classes {
 		/// <summary>
 		/// Current song playing in the bot
 		/// </summary>
-		private SongDataContainer CurrentSong;
+		private TwitchRequestedSong CurrentSong;
 
 		/// <summary>
 		/// Primary requested song list.
 		/// </summary>
-		private readonly LinkedList<SongDataContainer> Songlist = new LinkedList<SongDataContainer>();
+		private readonly LinkedList<TwitchRequestedSong> Songlist = new LinkedList<TwitchRequestedSong>();
 
 		/// <summary>
 		/// Stored and managed backup requests. Info saved to SongRequestData.txt
@@ -62,9 +82,9 @@ namespace TwitchBotManager.Code.Classes {
 			}
 		}
 
-		public uint SongCacheAmount { get; set; }
+		public int SongCacheAmount { get; set; }
 
-		private int currentVolume;
+		private int currentVolume = 100;
 		public int CurrentVolume {
 			get => currentVolume;
 			set {
@@ -73,6 +93,15 @@ namespace TwitchBotManager.Code.Classes {
 				if (VLCPlayer != null) {
 					VLCPlayer.Volume = value;
 				}
+			}
+		}
+
+		private int _maxUserRequests = 5;
+		public int MaxUserRequests {
+			get => _maxUserRequests;
+			set {
+				_maxUserRequests = value;
+				OnMaxRequestsUpdate.SafeInvoke(this, value);
 			}
 		}
 
@@ -130,6 +159,8 @@ namespace TwitchBotManager.Code.Classes {
 
 		public event EventHandler<int> OnVolumeUpdate;
 
+		public event EventHandler<int> OnMaxRequestsUpdate;
+
 		public event EventHandler<(int LiteralPosition, string TranslatedTime)> OnPlayerProgress;
 
 		#endregion
@@ -162,6 +193,7 @@ namespace TwitchBotManager.Code.Classes {
 					};
 
 					CurrentVolume = GlobalFunctions.LoadMediaPlayerVolume();
+					MaxUserRequests = GlobalFunctions.LoadMediaMaxRequests();
 
 					LoadSecondaryPlaylistFromFile();
 
@@ -303,15 +335,12 @@ namespace TwitchBotManager.Code.Classes {
 		private async void Media_EndReached(object sender, EventArgs e) {
 			// https://github.com/ZeBobo5/Vlc.DotNet/wiki/Vlc.DotNet-freezes-(don't-call-Vlc.DotNet-from-a-Vlc.DotNet-callback)
 
-			if (CurrentSong.CurrentRequesters.Count > 0) {
-				CurrentSong.CurrentRequesters.RemoveFirst();
-			}
-
 			await ManageCacheAfterMediaEnd();
 
 			// Cant access song, IOExecption cant access file to delete cache
 
 			ThreadPool.QueueUserWorkItem(_ => {
+				media.Dispose();
 				PlayMedia();
 			});
 		}
@@ -326,7 +355,7 @@ namespace TwitchBotManager.Code.Classes {
 			if (VLCPlayer.WillPlay) {
 				VLCPlayer.Play();
 
-				OnSongRequestOutputChanged.SafeInvoke(this, SongOutputText.InputString = CurrentSong.OutputString(IsSecondary ? -1 : 0) + " ||" + TwitchBot.SongCommandPrefix + "|");
+				OnSongRequestOutputChanged.SafeInvoke(this, SongOutputText.InputString = CurrentSong.OutputString() + " ||" + TwitchBot.SongCommandPrefix + "|");
 			} else {
 				PlayMedia();
 			}
@@ -387,21 +416,23 @@ namespace TwitchBotManager.Code.Classes {
 
 		private Random SecondarySongListRandomNumber;
 		private async void PlayMedia(SongDataContainer song = null) {
-			if (song == null) {
-				if (Songlist.Count == 0 && SecondarySongPlaylist.Count == 0) {
-					MainForm.StaticPostToDebug("Main playlist and secondary playlist are empty, please request songs to start playing.");
+			if (song == null && Songlist.Count == 0 && SecondarySongPlaylist.Count == 0) {
+				MainForm.StaticPostToDebug("Main playlist and secondary playlist are empty, please request songs to start playing.");
+				IsSecondary = false;
+				return;
+			}
+
+			// Play song
+			try {
+				OnTranstioning.SafeInvoke(this, IsTranstioning = true);
+
+				if (song != null) {
+					CurrentSong = new TwitchRequestedSong(song, song.OriginalRequester);
 					IsSecondary = false;
-					return;
-				}
-
-				IsTranstioning = true;
-				// Get Current Song
-
-				if (Songlist.Count > 0) {
+				} else if (Songlist.Count > 0) {
 					CurrentSong = Songlist.First.Value;
-					Songlist.RemoveFirst();
 					IsSecondary = false;
-				} else { // Get from secondary playlist
+				} else if (Songlist.Count == 0) { // Get from secondary playlist
 					if (SecondarySongListRandomNumber == null) { // Flush Random to provide a better Random experiance, Random can usually be repettative if left unflushed
 						SecondarySongListRandomNumber = new Random();
 						byte[] array = new byte[1000];
@@ -422,38 +453,34 @@ namespace TwitchBotManager.Code.Classes {
 						randomNumber = SecondarySongListRandomNumber.Next(SecondarySongPlaylist.Count - 1);
 					} while (SecondarySongPlaylist[SecondaryKeys[randomNumber]]); // Random until it finds a song that hasnt been played
 
-					CurrentSong = SecondaryKeys[randomNumber];
+					CurrentSong = new TwitchRequestedSong(SecondaryKeys[randomNumber], SecondaryKeys[randomNumber].OriginalRequester);
 					SecondarySongPlaylist[SecondaryKeys[randomNumber]] = true;
 					IsSecondary = true;
 				}
-			} else {
-				CurrentSong = song;
-				IsSecondary = false;
-			}
 
-			// Output song details
-			OnNextSong.SafeInvoke(this, !SecondarySongPlaylist.Keys.Any(z => z.Link.Equals(CurrentSong.Link)));
-			OnSongRequestOutputChanged.SafeInvoke(this, SongOutputText.InputString = CurrentSong.OutputString(IsSecondary ? -1 : 0) + " ||" + TwitchBot.SongCommandPrefix + "|");
-
-			// Play song
-			try {
-				OnTranstioning.SafeInvoke(this, true);
-
-				if (CurrentSong.LocalFile && !CurrentSong.AudioCached()) {
-					throw new Exception($"Local file: {CurrentSong.DirLocation} Not found.");
-				} else if (!CurrentSong.AudioCached() && !CurrentSong.DownloadWorking) {
-					await CurrentSong.GetYouTubeAudioData(YoutubeDLWorker);
-					if (!CurrentSong.AudioCached()) {
-						throw new Exception($"Song : {CurrentSong.Title} Failed to find Cache.");
+				if (CurrentSong.SongData.LocalFile && !CurrentSong.SongData.AudioCached()) {
+					MainForm.StaticPostToDebug($"Local file: {CurrentSong.SongData.DirLocation} Not found.");
+				} else if (!CurrentSong.SongData.AudioCached() || CurrentSong.SongData.DownloadWorking) {
+					await CurrentSong.SongData.GetYouTubeAudioData(YoutubeDLWorker);
+					if (!CurrentSong.SongData.AudioCached()) {
+						MainForm.StaticPostToDebug($"Song : {CurrentSong.SongData.Title} Failed to find Cache.");
 					}
 				}
 
-				VLCPlayer.Media = media = new Media(_libVLC, CurrentSong.FullDirLocation);
+				VLCPlayer.Media = media = new Media(_libVLC, CurrentSong.SongData.FullDirLocation);
 				await VLCPlayer.Media.Parse();
 
 				VLCPlayer.Play();
 
-				MainForm.StaticPostToDebug("Playing song: " + (string.IsNullOrEmpty(CurrentSong.Title) ? CurrentSong.Link : CurrentSong.Title));
+				// Output song details
+				OnNextSong.SafeInvoke(this, !SecondarySongPlaylist.Keys.Any(z => z.Link.Equals(CurrentSong.SongData.Link)));
+				OnSongRequestOutputChanged.SafeInvoke(this, SongOutputText.InputString = CurrentSong.OutputString() + " ||" + TwitchBot.SongCommandPrefix + "|");
+
+				if (Songlist.Count > 0 && !IsSecondary) {
+					Songlist.RemoveFirst();
+				}
+
+				MainForm.StaticPostToDebug("Playing song: " + (string.IsNullOrEmpty(CurrentSong.SongData.Title) ? CurrentSong.SongData.Link : CurrentSong.SongData.Title));
 
 			} catch (Exception exc) {
 				OnError.SafeInvoke(this, exc.Message);
@@ -461,16 +488,18 @@ namespace TwitchBotManager.Code.Classes {
 				MainForm.StaticPostToDebug("Song Failed to play, recovering and moving on to the next song.");
 				MainForm.StaticPostToDebug(exc.Message);
 
-				if (CurrentSong.LocalFile && !CurrentSong.AudioCached()) {
-					CurrentSong.LastPingFailed = true;
+				if (CurrentSong.SongData.LocalFile && !CurrentSong.SongData.AudioCached()) {
+					CurrentSong.SongData.LastPingFailed = true;
 
-					SecondarySongPlaylist.Remove(CurrentSong);
+					SecondarySongPlaylist.Remove(CurrentSong.SongData);
 
-					if (!BrokenLinklist.Contains(CurrentSong)) {
-						BrokenLinklist.Add(CurrentSong);
+					if (!BrokenLinklist.Contains(CurrentSong.SongData)) {
+						BrokenLinklist.Add(CurrentSong.SongData);
 					}
 
-					MainForm.StaticPostToDebug("Secondary Playlist Song Data Failed... " + CurrentSong.DirLocation);
+					MainForm.StaticPostToDebug("Secondary Playlist Song Data Failed... " + CurrentSong.SongData.DirLocation);
+				} else if (!IsSecondary && Songlist.Count > 0) {
+					Songlist.RemoveFirst();
 				}
 				PlayMedia();
 			}
@@ -623,59 +652,55 @@ namespace TwitchBotManager.Code.Classes {
 				return "Song requests currently disabled.";
 			}
 
-			string output = "";
-			SongDataContainer newsong = null;
-
-			attempt: try {
-				GlobalFunctions.GetYouTubeVideoID(link, out string ID);
-
-				foreach (SongDataContainer song in Songlist.ToArray()) {
-					if (song.Link.Contains(ID)) {
-						song.CurrentRequesters.AddLast(requester);
-						Songlist.AddLast(song);
-						output= $"@{requester} : {song.Title} was Successfully Requested.";
-						break;
-					}
-				}
-
-				foreach (SongDataContainer song in SecondarySongPlaylist.Keys) {
-					if (song.Link.Contains(ID)) {
-						song.CurrentRequesters.AddLast(requester);
-						Songlist.AddLast(song);
-						output= $"@{requester} : {song.Title} was Successfully Requested.";
-						break;
-					}
-				}
-
-				foreach (SongDataContainer song in BrokenLinklist) {
-					if (song.Link.Contains(ID)) {
-						output= $"@{requester} : {song.Title} Is a saved song but unfortunatly isnt working at the moment, sorry for the inconvenience.";
-						break;
-					}
-				}
-
-				if (newsong == null) {
-					newsong = await SongDataContainer.CreateNewContainer(link, requester, YoutubeDLWorker);
-				}
-
-				if (newsong.PingValid) {
-					Songlist.AddLast(newsong);
-
-					foreach (SongDataContainer songData in Songlist.Take(RequestsCacheAmount > Songlist.Count ? Songlist.Count : RequestsCacheAmount.Value)) {
-						if (!songData.AudioCached()) {
-							await songData.GetYouTubeAudioData(YoutubeDLWorker);
-						}
-					}
-
-					output= $"@{requester} : {newsong.Title} was Successfully Requested.";
-				} else {
-					output= $"@{requester} : {newsong.Link} Request Failed. Ping to YouTube Failed.";
-				}
-			} catch {
-				await Task.Delay(500);
-				goto attempt;
+			if (GetRequesterRequestAmount(requester) >= MaxUserRequests) {
+				return $"@{requester} : You have currently requested the maximum amount per person. [{MaxUserRequests}]";
 			}
-			return output;
+
+			GlobalFunctions.GetYouTubeVideoID(link, out string ID);
+
+			foreach (TwitchRequestedSong song in Songlist.ToArray()) {
+				if (song.SongData.Link.Contains(ID)) {
+					Songlist.AddLast(new TwitchRequestedSong(song.SongData, requester));
+					return $"@{requester} : {song.SongData.Title} was Successfully Requested.";
+				}
+			}
+
+			foreach (SongDataContainer song in SecondarySongPlaylist.Keys) {
+				if (song.Link.Contains(ID)) {
+					Songlist.AddLast(new TwitchRequestedSong(song, requester));
+					return $"@{requester} : {song.Title} was Successfully Requested.";
+				}
+			}
+
+			foreach (SongDataContainer song in BrokenLinklist) {
+				if (song.Link.Contains(ID)) {
+					return $"@{requester} : {song.Title} Is a saved song but unfortunatly isnt working at the moment, sorry for the inconvenience.";
+				}
+			}
+
+			bool getvideodata = true;
+			if (RequestsCacheAmount.HasValue) {
+				getvideodata = Songlist.Sum(e => { 
+					if (e.SongData.AudioCached()) { 
+						return 1; 
+					} 
+					return 0; 
+				}) < RequestsCacheAmount.Value;
+			}
+			SongDataContainer newsong = await SongDataContainer.CreateNewContainer(link, requester, YoutubeDLWorker, getvideodata);
+
+			if (newsong.PingValid) {
+				Songlist.AddLast(new TwitchRequestedSong(newsong, requester));
+
+				await Task.WhenAll(Songlist.Take(RequestsCacheAmount > Songlist.Count ? Songlist.Count : RequestsCacheAmount.Value)
+					.TakeWhile(e => !e.SongData.AudioCached() && !e.SongData.DownloadWorking)
+					.Select(e => e.SongData.GetYouTubeAudioData(YoutubeDLWorker))
+					.ToArray());
+
+				return $"@{requester} : {newsong.Title} was Successfully Requested.";
+			} else {
+				return $"@{requester} : {newsong.Link} Request Failed. {newsong.ErrorMessage}";
+			}
 		}
 
 		#endregion
@@ -691,26 +716,22 @@ namespace TwitchBotManager.Code.Classes {
 		/// </summary>
 		private async Task ManageCacheAfterMediaEnd() {
 			try {
+				media.Dispose();
 				if (RequestsCacheAmount.HasValue) {
 					ToCacheVale = RequestsCacheAmount > Songlist.Count ? Songlist.Count : RequestsCacheAmount.Value;
-					IEnumerable<SongDataContainer> TakenList = Songlist.Take(ToCacheVale);
+					IEnumerable<SongDataContainer> TakenList = Songlist.Select(e => e.SongData).Take(ToCacheVale);
 
-					if (!TakenList.Contains(CurrentSong) && !SecondarySongPlaylist.ContainsKey(CurrentSong)) {
-						media.Dispose();
-						await CurrentSong.DeleteCache();
+					if (!TakenList.Contains(CurrentSong.SongData) && !SecondarySongPlaylist.ContainsKey(CurrentSong.SongData)) {
+						await CurrentSong.SongData.DeleteCache();
 					}
 
-					foreach (SongDataContainer songData in TakenList) {
-						if (!songData.AudioCached()) {
-							await songData.GetYouTubeAudioData(YoutubeDLWorker);
-						}
-					}
+					await Task.WhenAll(TakenList.TakeWhile(e => !e.AudioCached())
+						.Select(e => e.GetYouTubeAudioData(YoutubeDLWorker))
+						.ToArray());
 				} else {
-					foreach (SongDataContainer songData in Songlist) {
-						if (!songData.AudioCached()) {
-							await songData.GetYouTubeAudioData(YoutubeDLWorker);
-						}
-					}
+					await Task.WhenAll(Songlist.Select(e => e.SongData).TakeWhile(e => !e.AudioCached())
+						.Select(e => e.GetYouTubeAudioData(YoutubeDLWorker))
+						.ToArray());
 				}
 			} catch (Exception e) {
 				MainForm.StaticPostToDebug($"ManageCacheAfterMediaEnd ERROR caught and recovered: {e.Message}");
@@ -729,7 +750,10 @@ namespace TwitchBotManager.Code.Classes {
 					continue;
 				}
 
-				if (SecondarySongPlaylist.Keys.Any(e => e.Link.Contains(fileID)) || BrokenLinklist.Any(e => e.Link.Contains(fileID))) {
+				if (SecondarySongPlaylist.Keys.Any(e => e.Link.Contains(fileID)) || 
+					BrokenLinklist.Any(e => e.Link.Contains(fileID)) ||
+					(CurrentSong != null && CurrentSong.SongData.Link.Contains(fileID)) ||
+					Songlist.Select(e => e.SongData.Link).Any(e => e.Contains(fileID))) {
 					continue;
 				} else {
 					if (File.Exists(filename)) {
@@ -746,7 +770,7 @@ namespace TwitchBotManager.Code.Classes {
 		#endregion
 
 		public bool CheckCurrentSongIsSaved() =>
-			SecondarySongPlaylist.ContainsKey(CurrentSong) || BrokenLinklist.Contains(CurrentSong);
+			SecondarySongPlaylist.ContainsKey(CurrentSong.SongData) || BrokenLinklist.Contains(CurrentSong.SongData);
 
 		public string GetCurrentSong(bool newlines = false) {
 			if (IsStopped) {
@@ -754,7 +778,7 @@ namespace TwitchBotManager.Code.Classes {
 			} else if (CurrentSong == null) {
 				return "No song currently playing.";
 			}
-			return CurrentSong.OutputString(CurrentSong.CurrentRequesters.Count > 0 ? 0 : -1, newlines);
+			return CurrentSong.OutputString(newlines);
 		}
 
 		/// <summary>
@@ -773,27 +797,13 @@ namespace TwitchBotManager.Code.Classes {
 		/// Returns the ToString of the current song requests and its index in the list.
 		/// </summary>
 		/// <returns></returns>
-		public Dictionary<int, string> GetCurrentPlaylist(bool newlines = false) {
-			Dictionary<int, string> output = new Dictionary<int, string>();
-			SongDataContainer[] keys = Songlist.ToArray();
-			Dictionary<SongDataContainer, int> processed = new Dictionary<SongDataContainer, int>();
-
-			for (int x = 0; x < keys.Length; x++) {
-				if (processed.ContainsKey(keys[x])) {
-					processed[keys[x]]++;
-				} else {
-					processed.Add(keys[x], 0);
-				}
-
-				output.Add(x, keys[x].OutputString(processed[keys[x]], newlines));
-			}
-
-			return output;
+		public List<string> GetCurrentPlaylist(bool newlines = false) {
+			return Songlist.Select(e => e.OutputString(newlines)).ToList();
 		}
 
 		public bool GetFromSonglistByIndex(int index, out NameValueCollection data) {
 			if (index < Songlist.Count) {
-				data = Songlist.ElementAt(index).OutputDataValues();
+				data = Songlist.ElementAt(index).SongData.OutputDataValues();
 				return true;
 			}
 			data = null;
@@ -819,24 +829,21 @@ namespace TwitchBotManager.Code.Classes {
 		}
 
 		public void ClearSongRequests() {
-			foreach (SongDataContainer song in Songlist) {
-				if (!SecondarySongPlaylist.ContainsKey(song) || !BrokenLinklist.Contains(song)) {
-					song.DeleteCache();
-				}
-			}
 			Songlist.Clear();
+			ClearAllCache();
 			OnSecondaryPlaylistUpdated.SafeInvoke(this, EventArgs.Empty);
 		}
 
 		public bool SaveCurrentSong() {
 			if (CurrentSong != null) {
-				if (SecondarySongPlaylist.ContainsKey(CurrentSong)) {
+				if (SecondarySongPlaylist.ContainsKey(CurrentSong.SongData)) {
 					return true;
 				}
 
 				File.AppendAllText(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt", JsonConvert.SerializeObject(CurrentSong) + Environment.NewLine);
-				MainForm.StaticPostToDebug(CurrentSong.Title + " Saved to Secondary Playlist.");
-				SecondarySongPlaylist.Add(CurrentSong, false);
+				MainForm.StaticPostToDebug(CurrentSong.SongData.Title + " Saved to Secondary Playlist.");
+				CurrentSong.SongData.OriginalRequester = CurrentSong.Requester;
+				SecondarySongPlaylist.Add(CurrentSong.SongData, false);
 
 				return true;
 			}
@@ -846,15 +853,15 @@ namespace TwitchBotManager.Code.Classes {
 
 		public bool RemoveCurrentSongFromSeconday() {
 			if (CurrentSong != null) {
-				if (!SecondarySongPlaylist.ContainsKey(CurrentSong)) {
+				if (!SecondarySongPlaylist.ContainsKey(CurrentSong.SongData)) {
 					return true;
 				}
 
 				if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt")) {
 					List<string> songs = File.ReadAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt").ToList();
-					songs.RemoveAll(x => x.Contains(CurrentSong.Link));
+					songs.RemoveAll(x => x.Contains(CurrentSong.SongData.Link));
 					File.WriteAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt", songs);
-					MainForm.StaticPostToDebug(CurrentSong.Title + " Removed from Secondary Playlist.");
+					MainForm.StaticPostToDebug(CurrentSong.SongData.Title + " Removed from Secondary Playlist.");
 				}
 
 				return true;
@@ -957,48 +964,58 @@ namespace TwitchBotManager.Code.Classes {
 		}
 
 		public string RemoveLastSongByUser(string requester) {
-			if (!Songlist.Any(e => e.CurrentRequesters.First.Equals(requester))) {
-				return $"@{requester} : No songs found.";
-			} else {
-				SongDataContainer song = Songlist.TakeWhile(e => e.CurrentRequesters.First.Equals(requester)).Last();
+			if (Songlist.Any(e => e.Requester.Equals(requester))) {
+				TwitchRequestedSong song = Songlist.TakeWhile(e => e.Requester.Equals(requester)).First();
 				Songlist.Remove(song);
-				return $"@{requester} : {song.Title} Has been removed.";
+				return $"@{requester} : {song.SongData.Title} Has been removed.";
+			} else {
+				return $"@{requester} : No songs found.";
 			}
 		}
 
 
 		public string RemoveIndexSongByUser(string requester, int index) {
-			if (!Songlist.Any(e => e.CurrentRequesters.First.Equals(requester))) {
-				return $"@{requester} : No songs found.";
-			} else {
-				IEnumerable<SongDataContainer> songs = Songlist.TakeWhile(e => e.CurrentRequesters.First.Equals(requester));
-				if (songs.Count() > index) {
+			if (Songlist.Any(e => e.Requester.Equals(requester))) {
+				IEnumerable<TwitchRequestedSong> songs = Songlist.TakeWhile(e => e.Requester.Equals(requester));
+				if (index > songs.Count()) {
 					return $"@{requester} : Index value '{index}' not found in requests.";
 				} else {
-					SongDataContainer song = Songlist.TakeWhile(e => e.CurrentRequesters.First.Equals(requester)).ElementAt(index);
+					TwitchRequestedSong song = songs.ElementAt(index);
 					Songlist.Remove(song);
 
-					return $"@{requester} : {song.Title} Has been removed.";
+					return $"@{requester} : {song.SongData.Title} Has been removed.";
 				}
+			} else {
+				return $"@{requester} : No songs found.";
 			}
 		}
 
 		public string PrintRequesterSongList(string requester) {
-			if (!Songlist.Any(e => e.CurrentRequesters.First.Equals(requester))) {
-				return $"@{requester} : No songs found.";
-			} else {
+			if (Songlist.Any(e => e.Requester.Equals(requester))) {
 				string output = $"@{requester} : | ";
-				IEnumerable<SongDataContainer> songs = Songlist.TakeWhile(e => e.CurrentRequesters.First.Equals(requester));
+				IEnumerable<TwitchRequestedSong> songs = Songlist.TakeWhile(e => e.Requester.Equals(requester));
 				for (int x = 0; x < songs.Count(); x++) {
-					if (string.IsNullOrEmpty(songs.ElementAt(x).Title)) {
-						output += $"{x + 1} : {songs.ElementAt(x).Link} | ";
+					if (string.IsNullOrEmpty(songs.ElementAt(x).SongData.Title)) {
+						output += $"{x + 1} : {songs.ElementAt(x).SongData.Link} | ";
 					} else {
-						output += $"{x + 1} : {songs.ElementAt(x).Title} | ";
+						output += $"{x + 1} : {songs.ElementAt(x).SongData.Title} | ";
 					}
 				}
 
 				return output;
+			} else {
+				return $"@{requester} : No songs found.";
 			}
+		}
+
+		public int GetRequesterRequestAmount(string requester) {
+			return Songlist.Sum(e => { 
+				if (e.Requester.Equals(requester)) {
+					return 1;
+				} else {
+					return 0;
+				}
+			});
 		}
 
 		public void ProcessIDGeneration() {

@@ -79,7 +79,7 @@ namespace TwitchBotManager.Code {
 		public event EventHandler<BotCommandContainer> OnPlaySongRequests;
 		public event EventHandler<BotCommandContainer> OnClearSongRequests;
 
-		public event EventHandler<OnConnectionErrorArgs> OnConnectionError;
+		public event EventHandler<EventArgs> OnConnectionError;
 
 		public bool IsConnected => client.IsConnected;
 
@@ -145,9 +145,10 @@ namespace TwitchBotManager.Code {
 								" showmylist = Shows the songs you have added to the list ||" +
 								" remove # = Remove song at index starting with earliest ||" +
 								" removeall = Remove all songs you have added ||" +
-								" (MOD) skip = Skips the current song ||" +
-								" (MOD) pause = Pauses the current song ||" +
-								" (MOD) clear = Wipes the current song list");
+								" skip (MOD ONLY) = Skips the current song ||" +
+								" play (MOD ONLY) = Plays the current song ||" +
+								" pause (MOD ONLY) = Pauses the current song ||" +
+								" clear (MOD ONLY) = Wipes the current song list");
 				}},
 				{"", (e, f) => {
 					client.SendMessage(TwitchUsername, AboutText); // Help text or bot info 
@@ -214,19 +215,19 @@ namespace TwitchBotManager.Code {
 		}
 
 		public void ConnectToChat() {
-			if (!client.IsConnected && IsActive) {
+			if (IsActive) {
 				client.Connect();
 			}
 		}
 
 		public void DisconnectFromChat() {
-			if (client.IsConnected && IsActive) {
+			if (IsActive) {
 				client.Disconnect();
 			}
 		}
 
 		public void ReconnectToChat() {
-			if (client.IsConnected && IsActive) {
+			if (IsActive) {
 				client.Reconnect();
 			}
 		}
@@ -331,19 +332,22 @@ namespace TwitchBotManager.Code {
 
 		private void Client_OnIncorrectLogin(object sender, OnIncorrectLoginArgs e) {
 			// TODO : Message MainForm the login was invalid
+			MessageBox.Show("A connection error has occured, please check your login details and try again.", "Connection Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
 		}
 
 		private void Client_OnError(object sender, OnErrorEventArgs e) {
 			// TODO : Message MainForm there was an error
+			OnConnectionError.Invoke(sender, e);
+			MainForm.StaticPostToDebug($"Twitch Bot Client Error Occured: {e.Exception}");
 		}
 
 		private void Client_OnDisconnected(object sender, OnDisconnectedEventArgs e) {
-
+			MainForm.StaticPostToDebug("Twitch Bot Disconnected");
 		}
 
 		private void Client_OnConnectionError(object sender, OnConnectionErrorArgs e) {
 			OnConnectionError.Invoke(sender, e);
-			MessageBox.Show("A connection error has occured, please check your login details and try again.", "Connection Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			MainForm.StaticPostToDebug($"Twitch Bot Client Error Occured: {e.Error}");
 		}
 
 		private void Client_OnChatCleared(object sender, OnChatClearedArgs e) {
@@ -360,6 +364,7 @@ namespace TwitchBotManager.Code {
 
 		public void SendMessageToTwitchChat(string message) {
 			client.SendMessage(TwitchUsername, message);
+			OnMessageReceived.Invoke(this, DateTime.Now.ToString("MM/dd/yy - H:mm:ss zzz") + " || " + "#ME > " + TwitchUsername + " => ¬[ " + message + " ]¬");
 		}
 
 		private void PrintChatToLog() {
