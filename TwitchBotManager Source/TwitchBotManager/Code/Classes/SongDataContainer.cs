@@ -21,6 +21,17 @@ namespace TwitchBotManager.Code.Classes {
 		/// </summary>
 		public string Link { get; private set; }
 
+		[JsonIgnore]
+		public string ShortLink { 
+			get {
+				if (GlobalFunctions.GetYouTubeVideoID(Link, out string ID)) {
+					return $"youtu.be/{ID}";
+				} else {
+					return "";
+				}
+			} 
+		}
+
 		/// <summary>
 		/// User who requested song to the bot originally
 		/// </summary>
@@ -145,18 +156,18 @@ namespace TwitchBotManager.Code.Classes {
 		public string OutputString(string Requester = "", bool newLines = false) {
 			string output = "";
 
-			output += $"{(newLines ? Environment.NewLine : string.Empty)}|# Title #| : {(string.IsNullOrEmpty(Title) ? "#TITLE MISSING#" : Title)} ";
+			output += $"{(newLines ? Environment.NewLine : string.Empty)}| Title | : {(string.IsNullOrEmpty(Title) ? "#TITLE MISSING#" : Title)} ";
 
-			output += $"{(newLines ? Environment.NewLine : string.Empty)}|# Link #| : {(string.IsNullOrEmpty(Link) ? "#LINK MISSING#" : Link)} ";
+			output += $"{(newLines ? Environment.NewLine : string.Empty)}| Link | : {(string.IsNullOrEmpty(Link) ? "#LINK MISSING#" : (string.IsNullOrEmpty(ShortLink) ? Link : ShortLink))} ";
 
 			if (string.IsNullOrEmpty(Requester)) {
-				output += $"{(newLines ? Environment.NewLine : string.Empty)}|# Requester #| : {(string.IsNullOrEmpty(OriginalRequester) ? "#REQUESTER MISSING#" : OriginalRequester)} ";
+				output += $"{(newLines ? Environment.NewLine : string.Empty)}| Requester | : {(string.IsNullOrEmpty(OriginalRequester) ? "#REQUESTER MISSING#" : OriginalRequester)} ";
 			} else {
-				output += $"{(newLines ? Environment.NewLine : string.Empty)}|# Requester #| : {Requester} ";
+				output += $"{(newLines ? Environment.NewLine : string.Empty)}| Requester | : {Requester} ";
 			}
 			
 			if (LengthSec > 0) {
-				output += $"{(newLines ? Environment.NewLine : string.Empty)}|# Duration #| : {LengthInTime} ";
+				output += $"{(newLines ? Environment.NewLine : string.Empty)}| Duration | : {LengthInTime} ";
 			}
 			return output;
 		}
@@ -165,6 +176,7 @@ namespace TwitchBotManager.Code.Classes {
 			GlobalFunctions.GetYouTubeVideoID(Link, out string ID);
 			return new NameValueCollection {
 				{ nameof(Link), Link },
+				{ nameof(ShortLink), ShortLink },
 				{ nameof(ID), ID },
 				{ nameof(OriginalRequester), OriginalRequester },
 				{ nameof(Title), Title },

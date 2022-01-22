@@ -331,13 +331,14 @@ namespace TwitchBotManager {
 		}
 
 		public void UpdateSongListOutput() {
-			SongRequestList.ThreadSafeAction(e => e.Items.Clear());
+			SongRequestList.ThreadSafeAction(e => e.DataSource = new List<string>());
 
-			List<string> currentlist = songRequestManager.GetCurrentPlaylist(true);
 			int count = 0;
-			foreach (string song in currentlist) {
-				SongRequestList.ThreadSafeAction(e => e.Items.Add($"#{++count} :: {song}"));
-				SongRequestList.ThreadSafeAction(e => e.Items.Add(""));
+			foreach (string song in songRequestManager.GetCurrentPlaylist(true)) {
+				SongRequestList.ThreadSafeAction(e => { 
+					e.Items.Add($"#{++count} :: {song}"); 
+					e.Items.Add("");
+				});
 			}
 		}
 
@@ -438,11 +439,11 @@ namespace TwitchBotManager {
 		private void TwitchBot_OnPrintSongList(object sender, BotCommandContainer e) {
 			List<string> songlistout = songRequestManager.GetCurrentPlaylist();
 
-			string Output = songlistout.Count > 4 ? "Song List, Next 5 songs :: " : $"Song List, Next {songlistout.Count} songs :: ";
+			string Output = $"Song List, Next {(songlistout.Count > 4 ? 5 : songlistout.Count)} songs :: ";
 			int count = 0;
 
 			foreach (string song in songlistout) {
-				Output += $"#{++count} -- {song} || ";
+				Output += $"//#{++count}. {song} ";
 			}
 
 			twitchBot.SendMessageToTwitchChat(Output);
