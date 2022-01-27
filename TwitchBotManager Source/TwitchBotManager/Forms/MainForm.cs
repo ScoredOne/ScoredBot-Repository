@@ -207,18 +207,33 @@ namespace TwitchBotManager {
 
 				PlayPauseButton.Text = songRequestManager.IsPlaying ? "Pause" : "Play";
 
-				AddLinkButton.Enabled = true;
+				if (songRequestManager.PlaylistLoadError) {
+					AddLinkButton.Enabled = 
+					SaveLinkButton.Enabled = 
+					RequestsButton.Enabled =
+					RemoveSongFromSecondaryButton.Enabled =
+					ClaimAllSongsButton.Enabled =
+					ClaimSongButton.Enabled =
+					RemoveSecondarySongButton.Enabled =
+					AddSecondarySongButton.Enabled =
+					WriteUpdatedSongInfoToFileButton.Enabled = 
+					songRequestManager.TakingSongRequests = false;
+				} else {
+					AddLinkButton.Enabled = true;
+				}
 
 				CurrentSongDefaultLabel.ThreadSafeAction(e => e.Text = songRequestManager.GetCurrentSong());
 				CurrentSongRequestLabel.ThreadSafeAction(e => e.Text = songRequestManager.SongOutputText.OutputString);
 
-				if (songRequestManager.IsStopped) {
+				if (songRequestManager.IsLoading) {
+					songRequestManager.Stop(); 
+					PlayPauseButton.Enabled = SkipSongButton.Enabled = StopPlaybackButton.Enabled = false;
+				} else if (songRequestManager.IsStopped) {
 					PlayPauseButton.Enabled = true;
 					SkipSongButton.Enabled = StopPlaybackButton.Enabled = false;
 				} else {
-					PlayPauseButton.Enabled = SkipSongButton.Enabled = StopPlaybackButton.Enabled = !songRequestManager.IsLoading;
+					PlayPauseButton.Enabled = SkipSongButton.Enabled = StopPlaybackButton.Enabled = true;
 				}
-
 			} else {
 				PlayPauseButton.Enabled = false;
 				StopPlaybackButton.Enabled = false;

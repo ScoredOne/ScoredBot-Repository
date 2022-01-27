@@ -117,6 +117,8 @@ namespace TwitchBotManager.Code.Classes {
 
 		public bool IsSecondary { get; private set; } = false;
 
+		public bool PlaylistLoadError { get; private set; } = false;
+
 		/// <summary>
 		/// Number of requests to cache.
 		/// null = unlimited | 0 = none
@@ -196,6 +198,10 @@ namespace TwitchBotManager.Code.Classes {
 					MaxUserRequests = GlobalFunctions.LoadMediaMaxRequests();
 
 					LoadSecondaryPlaylistFromFile();
+
+					if (PlaylistLoadError) {
+						MessageBox.Show("An error occured reading the song list file, Secondary Playlist editing and functions have been disabled to prevent cache loss. To resolve please check songlist file for errors.", "Songlist Read Error");
+					}
 
 					EstablishMediaPlayer();
 
@@ -518,11 +524,19 @@ namespace TwitchBotManager.Code.Classes {
 			}
 
 			List<SongDataContainer> songRequestDatas = new List<SongDataContainer>();
+			int linecount = 0;
+			List<string> errorMessages = new List<string>();
 			File.ReadAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt").ToList().ForEach(e => {
+				linecount++;
 				if (!string.IsNullOrEmpty(e)) {
-					SongDataContainer requestData = SongDataContainer.ConvertFromJSONData(e);
-					if (requestData != null) {
-						songRequestDatas.Add(requestData);
+					try {
+						SongDataContainer requestData = SongDataContainer.ConvertFromJSONData(e);
+						if (requestData != null) {
+							songRequestDatas.Add(requestData);
+						}
+					} catch {
+						PlaylistLoadError = true;
+						errorMessages.Add($"ERROR READING LINE {linecount}: {e}");
 					}
 				}
 			});
@@ -542,8 +556,13 @@ namespace TwitchBotManager.Code.Classes {
 
 								MainForm.StaticPostToDebug($"Secondary Playlist Songs Loaded. All Threads Completed. [{SecondarySongPlaylist.Sum(y => y.Key.AudioCached() ? 1 : 0)} Successful] - [{SecondarySongPlaylist.Sum(y => y.Key.AudioCached() ? 0 : 1)} Failed]");
 
-								WriteSongListsToFile(false);
+								if (!PlaylistLoadError) {
+									WriteSongListsToFile(false);
+								} else {
+									errorMessages.ForEach(e => MainForm.StaticPostToDebug(e));
+								}
 								IsLoading = false;
+								OnSecondaryPlaylistUpdated.SafeInvoke(this, EventArgs.Empty);
 							});
 					});
 			} else {
@@ -551,7 +570,6 @@ namespace TwitchBotManager.Code.Classes {
 				IsLoading = false;
 			}
 
-			OnSecondaryPlaylistUpdated.SafeInvoke(this, EventArgs.Empty);
 		}
 
 		public async Task<bool> PingSecondarySongInfo(int index) {
@@ -680,11 +698,11 @@ namespace TwitchBotManager.Code.Classes {
 
 			bool getvideodata = true;
 			if (RequestsCacheAmount.HasValue) {
-				getvideodata = Songlist.Sum(e => { 
-					if (e.SongData.AudioCached()) { 
-						return 1; 
-					} 
-					return 0; 
+				getvideodata = Songlist.Sum(e => {
+					if (e.SongData.AudioCached()) {
+						return 1;
+					}
+					return 0;
 				}) < RequestsCacheAmount.Value;
 			}
 			SongDataContainer newsong = await SongDataContainer.CreateNewContainer(link, requester, YoutubeDLWorker, getvideodata);
@@ -743,6 +761,9 @@ namespace TwitchBotManager.Code.Classes {
 		/// Removes all songs from cache except songs found in the secondary playlist
 		/// </summary>
 		public void ClearAllCache() {
+			if (PlaylistLoadError) {
+				return;
+			}
 			foreach (string filename in Directory.GetFiles(OutputDir)) {
 				string fileID = Path.GetFileName(filename).Split(' ')[0].Trim();
 
@@ -750,7 +771,7 @@ namespace TwitchBotManager.Code.Classes {
 					continue;
 				}
 
-				if (SecondarySongPlaylist.Keys.Any(e => e.Link.Contains(fileID)) || 
+				if (SecondarySongPlaylist.Keys.Any(e => e.Link.Contains(fileID)) ||
 					BrokenLinklist.Any(e => e.Link.Contains(fileID)) ||
 					(CurrentSong != null && CurrentSong.SongData.Link.Contains(fileID)) ||
 					Songlist.Select(e => e.SongData.Link).Any(e => e.Contains(fileID))) {
@@ -840,7 +861,7 @@ namespace TwitchBotManager.Code.Classes {
 					return true;
 				}
 
-				File.AppendAllText(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt", JsonConvert.SerializeObject(CurrentSong) + Environment.NewLine);
+				File.AppendAllText(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt", JsonConvert.SerializeObject(CurrentSong.SongData) + Environment.NewLine);
 				MainForm.StaticPostToDebug(CurrentSong.SongData.Title + " Saved to Secondary Playlist.");
 				CurrentSong.SongData.OriginalRequester = CurrentSong.Requester;
 				SecondarySongPlaylist.Add(CurrentSong.SongData, false);
@@ -1009,7 +1030,7 @@ namespace TwitchBotManager.Code.Classes {
 		}
 
 		public int GetRequesterRequestAmount(string requester) {
-			return Songlist.Sum(e => { 
+			return Songlist.Sum(e => {
 				if (e.Requester.Equals(requester)) {
 					return 1;
 				} else {
