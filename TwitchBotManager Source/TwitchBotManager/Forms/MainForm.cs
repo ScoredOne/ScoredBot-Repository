@@ -15,8 +15,9 @@ using LibVLCSharp.Shared;
 
 using Microsoft.VisualBasic;
 
-using TwitchBotManager.Code;
-using TwitchBotManager.Code.Classes;
+using ScoredBot.Code;
+using ScoredBot.Code.Classes;
+using ScoredBot.Settings;
 
 using Timer = System.Windows.Forms.Timer; // System.Threading; conflict
 
@@ -27,39 +28,28 @@ using Timer = System.Windows.Forms.Timer; // System.Threading; conflict
 // Option to load songs raw (link only)
 
 /*
- - After lots of random continus requests it hard crashed (need to put try catches in every area of possible hard crash areas)
  - Song check if in secondary currently requires exact link instead of cleaning then checking (eg &t=12 [time stamp] makes it think the song isnt in the store)
  */
 
-/* Song Request Work:
-- Resort list into new catigories, (Pings work + song cached) - (Pings dont work + song cached) - (local songs) - (pings dont work + song not cached)
-- Combine first 3 lists ^ into a playlist to play from
-- Dynamic cache addresses / Update directories of cache if whole project moves
-*/
-
 /* TODO:
 - Local songs secondary playlist entries
-- Remove song from requested list (Needs testing)
 - User Blacklist for songs
 - Twitch chat message toggling
 - Follower only request mode
 - User chat tracker
 - Whisper functionality for mods
 - Timed actions
-- Auto Ads
 - 
 - 
 - 
 - https://stackoverflow.com/questions/453161/how-can-i-save-application-settings-in-a-windows-forms-application
 */
 
-namespace TwitchBotManager {
+namespace ScoredBot {
 
 	public partial class MainForm : Form {
 
 		public static bool IsExiting { get; private set; } = false;
-
-		public (string UserName, string OAuth, string Secret, string Target) TwitchBotLoginDetails { get; private set; } // UserName, oauth:xxxxxxxxxxxxxxxxxxxxxxxxxxxxx, TargetChannel
 
 		private Timer UpdateHandler;
 
@@ -71,6 +61,7 @@ namespace TwitchBotManager {
 
 		private SongRequestManager songRequestManager;
 
+		private List<NameValueCollection> RequestedSongs;
 		private List<NameValueCollection> SecondarySongs;
 		private List<NameValueCollection> BrokenSongs;
 
@@ -82,8 +73,10 @@ namespace TwitchBotManager {
 
 		public Action<string> PostToDebug => e => {
 			if (DebugConsoleList != null && Initialized) {
-				DebugConsoleList.Items.Add($"{DateTime.Now:yyyy-MM-dd / HH-mm-ss} :: {e}");
-				DebugConsoleList.TopIndex = DebugConsoleList.Items.Count - 1;
+				DebugConsoleList.ThreadSafeAction(f => {
+					f.Items.Add($"{DateTime.Now:yyyy-MM-dd / HH-mm-ss} :: {e}");
+					f.TopIndex = DebugConsoleList.Items.Count - 1;
+				});
 			}
 		};
 
@@ -101,7 +94,7 @@ namespace TwitchBotManager {
 			PostToDebug.Invoke("ScoredBot Application Opened and Loaded");
 
 			// Output Directory Data
-			GlobalFunctions.CheckAndCreateOutputDirectoryFiles();
+			ProgramSettings.CheckAndCreateOutputDirectoryFiles();
 
 			songRequestManager = new SongRequestManager();
 			songRequestManager.OnBuffering += SongRequestManager_OnBuffering;
@@ -113,15 +106,15 @@ namespace TwitchBotManager {
 			songRequestManager.OnSongRequestOutputChanged += SongRequestManager_OnSongRequestOutputChanged;
 			songRequestManager.OnStopped += SongRequestManager_OnStopped;
 			songRequestManager.OnNextSong += SongRequestManager_OnNextSong;
+			songRequestManager.OnSongListUpdated += SongRequestManager_OnSongListUpdated;
 			songRequestManager.Initialize();
 
 			VolumeLabel.Text = songRequestManager.PlayerVolumeTextOutput;
 
-			MaxRequestsLabel.Text = $"Request Limit: {songRequestManager.MaxUserRequests}";
+			MaxRequestsLabel.Text = $"Request Limit: {ProgramSettings.AppSettings.AppMusicMaxRequests}";
 
-			TwitchBotLoginDetails = GlobalFunctions.LoadLoginFromFile();
-
-			twitchAPI = new TwitchAPIInterfaceObject(TwitchBotLoginDetails.OAuth, TwitchBotLoginDetails.Secret); // Need more info to set this up
+			twitchAPI = new TwitchAPIInterfaceObject(ProgramSettings.AppSettings.OAuth,
+				ProgramSettings.AppSettings.Secret); // Need more info to set this up
 
 			Show();
 
@@ -190,7 +183,8 @@ namespace TwitchBotManager {
 
 				outputProcessingMessageToolStripMenuItem.Enabled = true;
 			} else {
-				BotStartStop.Enabled = !AppWorking && !(string.IsNullOrEmpty(TwitchBotLoginDetails.UserName) || string.IsNullOrEmpty(TwitchBotLoginDetails.OAuth));
+				BotStartStop.Enabled = !AppWorking && !(string.IsNullOrEmpty(ProgramSettings.AppSettings.UserName) ||
+					string.IsNullOrEmpty(ProgramSettings.AppSettings.OAuth));
 
 				ConnectionLabel.Text = "Disconnected";
 				ConnectionLabel.ForeColor = Color.Red;
@@ -208,16 +202,21 @@ namespace TwitchBotManager {
 				PlayPauseButton.Text = songRequestManager.IsPlaying ? "Pause" : "Play";
 
 				if (songRequestManager.PlaylistLoadError) {
-					AddLinkButton.Enabled = 
-					SaveLinkButton.Enabled = 
+					AddLinkButton.Enabled =
+					SaveLinkButton.Enabled =
 					RequestsButton.Enabled =
 					RemoveSongFromSecondaryButton.Enabled =
 					ClaimAllSongsButton.Enabled =
 					ClaimSongButton.Enabled =
 					RemoveSecondarySongButton.Enabled =
 					AddSecondarySongButton.Enabled =
-					WriteUpdatedSongInfoToFileButton.Enabled = 
-					songRequestManager.TakingSongRequests = false;
+					WriteUpdatedSongInfoToFileButton.Enabled =
+					songRequestManager.TakingSongRequests =
+					ClearALLCacheButton.Enabled =
+					CacheALLSongsButton.Enabled =
+					ClaimAllSongsButton.Enabled =
+					ClaimSongButton.Enabled =
+					CacheSongButton.Enabled = false;
 				} else {
 					AddLinkButton.Enabled = true;
 				}
@@ -226,28 +225,50 @@ namespace TwitchBotManager {
 				CurrentSongRequestLabel.ThreadSafeAction(e => e.Text = songRequestManager.SongOutputText.OutputString);
 
 				if (songRequestManager.IsLoading) {
-					songRequestManager.Stop(); 
-					PlayPauseButton.Enabled = SkipSongButton.Enabled = StopPlaybackButton.Enabled = false;
+					songRequestManager.Stop();
+					PlayPauseButton.Enabled =
+					SkipSongButton.Enabled =
+					RemoveSecondarySongButton.Enabled =
+					AddSecondarySongButton.Enabled =
+					ClearALLCacheButton.Enabled =
+					CacheALLSongsButton.Enabled =
+					ClaimAllSongsButton.Enabled =
+					ClaimSongButton.Enabled =
+					CacheSongButton.Enabled =
+					StopPlaybackButton.Enabled = false;
 				} else if (songRequestManager.IsStopped) {
-					PlayPauseButton.Enabled = true;
+					PlayPauseButton.Enabled =
+					ClearALLCacheButton.Enabled =
+					CacheALLSongsButton.Enabled =
+					ClaimAllSongsButton.Enabled =
+					ClaimSongButton.Enabled =
+					CacheSongButton.Enabled = true;
 					SkipSongButton.Enabled = StopPlaybackButton.Enabled = false;
 				} else {
-					PlayPauseButton.Enabled = SkipSongButton.Enabled = StopPlaybackButton.Enabled = true;
+					PlayPauseButton.Enabled = 
+					SkipSongButton.Enabled = 
+					StopPlaybackButton.Enabled =
+					ClearALLCacheButton.Enabled =
+					CacheALLSongsButton.Enabled =
+					ClaimAllSongsButton.Enabled =
+					ClaimSongButton.Enabled =
+					CacheSongButton.Enabled = true;
 				}
 			} else {
-				PlayPauseButton.Enabled = false;
-				StopPlaybackButton.Enabled = false;
-				SkipSongButton.Enabled = false;
+				PlayPauseButton.Enabled =
+				StopPlaybackButton.Enabled =
+				SkipSongButton.Enabled =
 
-				AddLinkButton.Enabled = false;
-				RequestsButton.Enabled = songRequestManager.TakingSongRequests = false;
+				AddLinkButton.Enabled =
+				RequestsButton.Enabled =
+				songRequestManager.TakingSongRequests = false;
 
 				CurrentSongDefaultLabel.ThreadSafeAction(e => e.Text = "SongRequestManager Error");
 			}
 
-			UserNameToolLabel.Text = string.IsNullOrEmpty(TwitchBotLoginDetails.UserName) ? "No User Name Found" : TwitchBotLoginDetails.UserName;
-			OAuthToolLabel.Text = string.IsNullOrEmpty(TwitchBotLoginDetails.OAuth) ? "No ClientID Found" : TwitchBotLoginDetails.OAuth;
-			TargetFoundLabel.Text = string.IsNullOrEmpty(TwitchBotLoginDetails.Target) ? "No Target Found" : TwitchBotLoginDetails.Target;
+			UserNameToolLabel.Text = string.IsNullOrEmpty(ProgramSettings.AppSettings.UserName) ? "No User Name Found" : ProgramSettings.AppSettings.UserName;
+			OAuthToolLabel.Text = string.IsNullOrEmpty(ProgramSettings.AppSettings.OAuth) ? "No ClientID Found" : ProgramSettings.AppSettings.OAuth;
+			TargetFoundLabel.Text = string.IsNullOrEmpty(ProgramSettings.AppSettings.Target) ? "No Target Found" : ProgramSettings.AppSettings.Target;
 
 			RequestsButton.Text = songRequestManager.TakingSongRequests ? "Requests ON" : "Requests OFF";
 
@@ -292,7 +313,9 @@ namespace TwitchBotManager {
 			BotStartStop.Enabled = false;
 
 			if (twitchBot == null) {
-				twitchBot = new TwitchBot(TwitchBotLoginDetails.UserName, TwitchBotLoginDetails.OAuth, TwitchBotLoginDetails.Target);
+				twitchBot = new TwitchBot(ProgramSettings.AppSettings.UserName,
+					ProgramSettings.AppSettings.OAuth,
+					ProgramSettings.AppSettings.Target);
 				twitchBot.OnCurrentSong += TwitchBot_OnCurrentSong;
 				twitchBot.OnAddSong += TwitchBot_OnAddSong;
 				twitchBot.OnClearSongRequests += TwitchBot_OnClearSongRequests;
@@ -304,6 +327,7 @@ namespace TwitchBotManager {
 				twitchBot.OnRemoveSong += TwitchBot_OnRemoveSong;
 				twitchBot.OnSkipSong += TwitchBot_OnSkipSong;
 				twitchBot.OnMessageReceived += TwitchBot_OnMessageReceived;
+				twitchBot.OnMODRemoveSong += TwitchBot_OnMODRemoveSong;
 
 				twitchBot.OnConnectionError += TwitchBot_OnConnectionError;
 
@@ -346,15 +370,19 @@ namespace TwitchBotManager {
 		}
 
 		public void UpdateSongListOutput() {
-			SongRequestList.ThreadSafeAction(e => e.DataSource = new List<string>());
-
+			List<string> UpdatedList = new List<string>();
 			int count = 0;
+
 			foreach (string song in songRequestManager.GetCurrentPlaylist(true)) {
-				SongRequestList.ThreadSafeAction(e => { 
-					e.Items.Add($"#{++count} :: {song}"); 
-					e.Items.Add("");
-				});
+				UpdatedList.Add($"#{++count} :: {song}");
 			}
+
+			SongRequestList.ThreadSafeAction(e => e.DataSource = UpdatedList);
+			if (UpdatedList.Count > 0) {
+				SongRequestList.ThreadSafeAction(e => e.SelectedIndex = -1);
+			}
+			RemoveSongRequestButton.ThreadSafeAction(e => e.Enabled = UpdatedList.Count > 0);
+			RequestedSongs = songRequestManager.GetRequestedSonglist();
 		}
 
 		private void CurrentDetailsToolButton_CheckedChanged(object sender, EventArgs e) {
@@ -383,7 +411,10 @@ namespace TwitchBotManager {
 		}
 
 		public void SetTwitchBotLoginDetails(string username, string clientid, string secret, string target) {
-			TwitchBotLoginDetails = (username, clientid, secret, target);
+			ProgramSettings.AppSettings.UserName = username;
+			ProgramSettings.AppSettings.OAuth = clientid;
+			ProgramSettings.AppSettings.Secret = secret;
+			ProgramSettings.AppSettings.Target = target;
 
 			File.WriteAllLines(Directory.GetCurrentDirectory() + @"\Outputs\SavedLoginInfo.txt", new string[] { username, clientid, secret, target });
 
@@ -436,32 +467,43 @@ namespace TwitchBotManager {
 		}
 
 		private async void TwitchBot_OnAddSong(object sender, BotCommandContainer e) {
-			string output = await songRequestManager.SubmitSongRequest(e.Command, e.User);
+			if (e.Commands != null && e.Commands.Count > 0) {
+				string command = e.Commands[0];
 
-			twitchBot.SendMessageToTwitchChat(output);
+				string output = await songRequestManager.SubmitSongRequest(command, e.User);
 
-			UpdateSongListOutput();
+				twitchBot.SendMessageToTwitchChat(output);
+			} else {
+				StaticPostToDebug("ERROR : TwitchBot_OnAddSong called without a song link attached.");
+			}
+
 		}
 
 		private void TwitchBot_OnPauseSongRequests(object sender, BotCommandContainer e) {
 			songRequestManager.Pause();
+			twitchBot.SendMessageToTwitchChat($"@{e.User} : Set to Pause.");
 		}
 
 		private void TwitchBot_OnPlaySongRequests(object sender, BotCommandContainer e) {
 			songRequestManager.Play();
+			twitchBot.SendMessageToTwitchChat($"@{e.User} : Set to Play.");
 		}
 
 		private void TwitchBot_OnPrintSongList(object sender, BotCommandContainer e) {
-			List<string> songlistout = songRequestManager.GetCurrentPlaylist();
+			IEnumerable<string> songlistout = songRequestManager.GetCurrentPlaylist();
 
-			string Output = $"Song List, Next {(songlistout.Count > 4 ? 5 : songlistout.Count)} songs :: ";
-			int count = 0;
+			if (songlistout.Count() == 0) {
+				twitchBot.SendMessageToTwitchChat($"@{e.User} Song List is currently empty.");
+			} else {
+				string Output = $"@{e.User} Song List, Next {(songlistout.Count() > 4 ? 5 : songlistout.Count())} songs :: ";
+				int count = 0;
 
-			foreach (string song in songlistout) {
-				Output += $"//#{++count}. {song} ";
+				foreach (string song in songlistout) {
+					Output += $"|| #{++count}. {song} ";
+				}
+
+				twitchBot.SendMessageToTwitchChat(Output);
 			}
-
-			twitchBot.SendMessageToTwitchChat(Output);
 		}
 
 		private void TwitchBot_OnPrintUserSongRequests(object sender, BotCommandContainer e) {
@@ -470,37 +512,51 @@ namespace TwitchBotManager {
 
 		private void TwitchBot_OnClearSongRequests(object sender, BotCommandContainer e) {
 			songRequestManager.ClearSongRequests();
-			UpdateSongListOutput();
+
+			twitchBot.SendMessageToTwitchChat(e.User + " Has cleared the song list.");
 		}
 
 		private void TwitchBot_OnRemoveAllSongs(object sender, BotCommandContainer e) {
 			songRequestManager.ClearSongRequests();
 
 			twitchBot.SendMessageToTwitchChat(e.User + " Has cleared the song list.");
-			UpdateSongListOutput();
 		}
 
 		private void TwitchBot_OnRemoveSong(object sender, BotCommandContainer e) {
-			if (string.IsNullOrEmpty(e.Command)) {
+			if (e.Commands == null) {
 				twitchBot.SendMessageToTwitchChat(songRequestManager.RemoveLastSongByUser(e.User));
-			} else if (int.TryParse(e.Command, out int result)) {
-				twitchBot.SendMessageToTwitchChat(songRequestManager.RemoveIndexSongByUser(e.User, result));
-			} else {
-				twitchBot.SendMessageToTwitchChat($"@{e.User} Sorry that command wasnt recognised.");
+			} else if (e.Commands.Count > 0) {
+				string command = e.Commands[0];
+				if (int.TryParse(command, out int result)) {
+					string message = songRequestManager.RemoveIndexSongByUser(e.User, result);
+					PostToDebug.Invoke(message);
+					twitchBot.SendMessageToTwitchChat(message);
+				} else {
+					twitchBot.SendMessageToTwitchChat($"@{e.User} Sorry that command wasnt recognised.");
+				}
 			}
-			UpdateSongListOutput();
 		}
 
 		private void TwitchBot_OnSkipSong(object sender, BotCommandContainer e) {
 			songRequestManager.Skip();
 			if (twitchBot != null) {
 				twitchBot.SendMessageToTwitchChat(e.User + " Has skipped the song.");
+				PostToDebug.Invoke("Song Skipped by " + e.User);
 			}
-			PostToDebug.Invoke("Song Skipped by " + e.User);
 		}
 
 		private void TwitchBot_OnMessageReceived(object sender, string e) {
 			File.AppendAllText(Directory.GetCurrentDirectory() + @"\Outputs\CurrentChatLog.txt", e + Environment.NewLine);
+		}
+
+		private void TwitchBot_OnMODRemoveSong(object sender, BotCommandContainer e) {
+			if (e.Commands == null || e.Commands.Count == 0) {
+				twitchBot.SendMessageToTwitchChat($"@{e.User} Sorry that command for 'modremovesong' wasnt recognised.");
+			} else {
+				string message = songRequestManager.RemoveSongFromRequestsByYTID(e.User, e.Commands[0]);
+				PostToDebug.Invoke(message);
+				twitchBot.SendMessageToTwitchChat(message);
+			}
 		}
 
 		#endregion
@@ -511,8 +567,9 @@ namespace TwitchBotManager {
 
 		private void IncreaseVolumeButton_MouseDown(object sender, MouseEventArgs e) {
 			void IncreaseVolume() {
-				if (songRequestManager != null && songRequestManager.CurrentVolume < 100) {
-					songRequestManager.CurrentVolume++;
+				if (songRequestManager != null && ProgramSettings.AppSettings.AppMusicVolume < 100) {
+					ProgramSettings.AppSettings.AppMusicVolume++;
+					songRequestManager.UpdatePlayerVolume();
 					VolumeLabel.Text = songRequestManager.PlayerVolumeTextOutput;
 				}
 			}
@@ -530,8 +587,9 @@ namespace TwitchBotManager {
 
 		private void DecreaseVolumeButton_MouseDown(object sender, MouseEventArgs e) {
 			void DecreaseVolume() {
-				if (songRequestManager != null && songRequestManager.CurrentVolume > 0) {
-					songRequestManager.CurrentVolume--;
+				if (songRequestManager != null && ProgramSettings.AppSettings.AppMusicVolume > 0) {
+					ProgramSettings.AppSettings.AppMusicVolume--;
+					songRequestManager.UpdatePlayerVolume();
 					VolumeLabel.Text = songRequestManager.PlayerVolumeTextOutput;
 				}
 			}
@@ -551,43 +609,30 @@ namespace TwitchBotManager {
 			VolumeLooper.Stop();
 			VolumeLooper.Dispose();
 			VolumeLooper = null;
-
-			if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\MediaVolume.txt")) {
-				File.WriteAllText(Directory.GetCurrentDirectory() + @"\Outputs\MediaVolume.txt", songRequestManager.CurrentVolume.ToString());
-			}
-
-			PostToDebug.Invoke("Volume set to " + songRequestManager.CurrentVolume.ToString());
+			PostToDebug.Invoke("Volume set to " + ProgramSettings.AppSettings.AppMusicVolume.ToString());
 		}
 
 		#endregion
 
 		#region ### MAX REQUEST BUTTONS ###
 		private void DecreaseMaxRequestsButton_Click(object sender, EventArgs e) {
-			if (songRequestManager.MaxUserRequests > 1) {
-				songRequestManager.MaxUserRequests--;
+			if (ProgramSettings.AppSettings.AppMusicMaxRequests > 1) {
+				ProgramSettings.AppSettings.AppMusicMaxRequests--;
 			} else {
-				songRequestManager.MaxUserRequests = 1;
+				ProgramSettings.AppSettings.AppMusicMaxRequests = 1;
 			}
 
-			if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\MaxRequests.txt")) {
-				File.WriteAllText(Directory.GetCurrentDirectory() + @"\Outputs\MaxRequests.txt", songRequestManager.MaxUserRequests.ToString());
-			}
-
-			PostToDebug.Invoke("Max User Requests set to " + songRequestManager.CurrentVolume.ToString());
+			PostToDebug.Invoke("Max User Requests set to " + ProgramSettings.AppSettings.AppMusicMaxRequests.ToString());
 		}
 
 		private void IncreaseMaxRequestsButton_Click(object sender, EventArgs e) {
-			if (songRequestManager.MaxUserRequests < 100) {
-				songRequestManager.MaxUserRequests++;
+			if (ProgramSettings.AppSettings.AppMusicMaxRequests < 100) {
+				ProgramSettings.AppSettings.AppMusicMaxRequests++;
 			} else {
-				songRequestManager.MaxUserRequests = 100;
+				ProgramSettings.AppSettings.AppMusicMaxRequests = 100;
 			}
 
-			if (File.Exists(Directory.GetCurrentDirectory() + @"\Outputs\MaxRequests.txt")) {
-				File.WriteAllText(Directory.GetCurrentDirectory() + @"\Outputs\MaxRequests.txt", songRequestManager.MaxUserRequests.ToString());
-			}
-
-			PostToDebug.Invoke("Max User Requests set to " + songRequestManager.CurrentVolume.ToString());
+			PostToDebug.Invoke("Max User Requests set to " + ProgramSettings.AppSettings.AppMusicMaxRequests.ToString());
 		}
 
 		#endregion
@@ -611,14 +656,13 @@ namespace TwitchBotManager {
 		private void ClearListButton_Click(object sender, EventArgs e) {
 			songRequestManager.ClearSongRequests();
 
-			UpdateSongListOutput();
 			PostToDebug.Invoke("Song Requests list cleared");
 		}
 
 		private async void AddLinkButton_Click(object sender, EventArgs e) {
 			// Currently just adds a song to the song list, need a button or change this to do one for host queue
 			if (twitchBot != null && twitchBot.IsActive && songRequestManager != null) {
-				await songRequestManager.SubmitSongRequest(TwitchBotLoginDetails.UserName, AddSongToPlayTextBox.Text, true);
+				await songRequestManager.SubmitSongRequest(ProgramSettings.AppSettings.UserName, AddSongToPlayTextBox.Text, true);
 				PostToDebug.Invoke(AddSongToPlayTextBox.Text + " Link added to current requests");
 			}
 		}
@@ -644,7 +688,16 @@ namespace TwitchBotManager {
 		}
 
 		private void SkipSongButton_Click(object sender, EventArgs e) {
-			TwitchBot_OnSkipSong(null, new BotCommandContainer(SongRequestCommandType.SkipSong, TwitchBotLoginDetails.UserName, null));
+			TwitchBot_OnSkipSong(null, new BotCommandContainer(SongRequestCommandType.SkipSong, ProgramSettings.AppSettings.UserName, null));
+		}
+
+		private void RemoveSongRequestButton_Click(object sender, EventArgs e) {
+			if (SongRequestList.SelectedIndex != -1) {
+				NameValueCollection nameValueCollection = RequestedSongs.ElementAt(SongRequestList.SelectedIndex);
+				if (nameValueCollection != null) {
+					songRequestManager.RemoveSongFromRequestedListSystID(nameValueCollection["UniqueSystemID"]);
+				}
+			}
 		}
 
 		#endregion
@@ -714,7 +767,7 @@ namespace TwitchBotManager {
 				});
 			}
 
-			LoadedSongsListBox.SelectedIndex = BrokenSongsListBox.SelectedIndex = -1;
+			GlobalFunctions.ExecuteThreadSafeActionToMultiple(e => e.SelectedIndex = -1, LoadedSongsListBox, BrokenSongsListBox);
 		}
 
 		private void RemoveSecondarySongButton_Click(object sender, EventArgs e) {
@@ -745,7 +798,7 @@ namespace TwitchBotManager {
 			GlobalFunctions.ExecuteThreadSafeActionToMultiple(x => x.Enabled = false, RetryBrokenSongButton, AddSecondarySongButton, RemoveSecondarySongButton, ClaimSongButton, ClaimAllSongsButton, WriteUpdatedSongInfoToFileButton);
 
 			string link = SecondaryTextBoxAddField.Text.Trim();
-			string requester = TwitchBotLoginDetails.UserName;
+			string requester = ProgramSettings.AppSettings.UserName;
 
 			if (string.IsNullOrEmpty(requester)) {
 				requester = Interaction.InputBox("Twitch Login currently empty, please insert a requester name for the song.", "Requester field required.", "#NOT PROVIDED#");
@@ -792,6 +845,7 @@ namespace TwitchBotManager {
 					$"Length:\t\t{data.Get(nameof(SongDataContainer.LengthInTime))}",
 					$"Ping Valid:\t{data.Get(nameof(SongDataContainer.PingValid))}",
 					$"Last Valid Ping:\t{data.Get(nameof(SongDataContainer.LastValidPing))}",
+					$"Caching Enabled:\t{data.Get(nameof(SongDataContainer.AllowCaching))}",
 				};
 			} else if (LoadedSongsListBox.SelectedIndex == -1) {
 				SecondaryTextBoxAddField.Text = "";
@@ -811,6 +865,7 @@ namespace TwitchBotManager {
 					$"Length:\t\t{data.Get(nameof(SongDataContainer.LengthInTime))}",
 					$"Ping Valid:\t{data.Get(nameof(SongDataContainer.PingValid))}",
 					$"Last Valid Ping:\t{data.Get(nameof(SongDataContainer.LastValidPing))}",
+					$"Caching Enabled:\t{data.Get(nameof(SongDataContainer.AllowCaching))}",
 				};
 			} else if (BrokenSongsListBox.SelectedIndex == -1) {
 				SecondaryTextBoxAddField.Text = "";
@@ -821,19 +876,25 @@ namespace TwitchBotManager {
 		private void ClaimSongButton_Click(object sender, EventArgs e) {
 			GlobalFunctions.ExecuteThreadSafeActionToMultiple(x => x.Enabled = false, BrokenSongsListBox, LoadedSongsListBox);
 
-			string requester = string.IsNullOrEmpty(TwitchBotLoginDetails.UserName) ?
+			string requester = string.IsNullOrEmpty(ProgramSettings.AppSettings.UserName) ?
 				Interaction.InputBox("Twitch Login currently empty, please insert a requester name.", "Requester field needed.", "#NOT PROVIDED#") :
-				TwitchBotLoginDetails.UserName;
+				ProgramSettings.AppSettings.UserName;
 
 			switch (SongListTabs.SelectedIndex) {
 				case 0:
-					if (LoadedSongsListBox.SelectedIndex != -1) {
-						songRequestManager.ClaimSong(requester, false, LoadedSongsListBox.SelectedIndex);
+					if (LoadedSongsListBox.SelectedIndex < SecondarySongs.Count && LoadedSongsListBox.SelectedIndex != -1) {
+						string value = SecondarySongs[LoadedSongsListBox.SelectedIndex].Get(nameof(SongDataContainer.UniqueSystemID));
+						if (!string.IsNullOrEmpty(value)) {
+							songRequestManager.ClaimSong(requester, value);
+						}
 					}
 					break;
 				case 1:
-					if (BrokenSongsListBox.SelectedIndex != -1) {
-						songRequestManager.ClaimSong(requester, true, BrokenSongsListBox.SelectedIndex);
+					if (BrokenSongsListBox.SelectedIndex < BrokenSongs.Count && BrokenSongsListBox.SelectedIndex != -1) {
+						string value = BrokenSongs[BrokenSongsListBox.SelectedIndex].Get(nameof(SongDataContainer.UniqueSystemID));
+						if (!string.IsNullOrEmpty(value)) {
+							songRequestManager.ClaimSong(requester, value);
+						}
 					}
 					break;
 			}
@@ -845,9 +906,9 @@ namespace TwitchBotManager {
 		private void ClaimAllSongsButton_Click(object sender, EventArgs e) {
 			GlobalFunctions.ExecuteThreadSafeActionToMultiple(x => x.Enabled = false, BrokenSongsListBox, LoadedSongsListBox);
 
-			string requester = string.IsNullOrEmpty(TwitchBotLoginDetails.UserName) ?
+			string requester = string.IsNullOrEmpty(ProgramSettings.AppSettings.UserName) ?
 				Interaction.InputBox("Twitch Login currently empty, please insert a requester name.", "Requester field needed.", "#NOT PROVIDED#") :
-				TwitchBotLoginDetails.UserName;
+				ProgramSettings.AppSettings.UserName;
 
 			songRequestManager.ClaimAllSongs(requester);
 			UpdateSecPlaylistTabLists();
@@ -871,6 +932,43 @@ namespace TwitchBotManager {
 			songRequestManager.WriteSongListsToFile(true);
 		}
 
+		private void CacheSongsRadioBut_CheckedChanged(object sender, EventArgs e) {
+			songRequestManager.SetNewSongsToCache = CacheSongsRadioBut.Checked;
+		}
+
+		private void CacheSongButton_Click(object sender, EventArgs e) {
+			switch (SongListTabs.SelectedIndex) {
+				case 0:
+					if (LoadedSongsListBox.SelectedIndex < SecondarySongs.Count && LoadedSongsListBox.SelectedIndex != -1) {
+						string value = SecondarySongs[LoadedSongsListBox.SelectedIndex].Get(nameof(SongDataContainer.UniqueSystemID));
+						if (!string.IsNullOrEmpty(value) && bool.TryParse(SecondarySongs[LoadedSongsListBox.SelectedIndex].Get(nameof(SongDataContainer.AllowCaching)), out bool tocache)) {
+							songRequestManager.CacheSong(value, !tocache);
+						}
+					}
+					break;
+				case 1:
+					if (BrokenSongsListBox.SelectedIndex < BrokenSongs.Count && BrokenSongsListBox.SelectedIndex != -1) {
+						string value = BrokenSongs[BrokenSongsListBox.SelectedIndex].Get(nameof(SongDataContainer.UniqueSystemID));
+						if (!string.IsNullOrEmpty(value) && bool.TryParse(SecondarySongs[LoadedSongsListBox.SelectedIndex].Get(nameof(SongDataContainer.AllowCaching)), out bool tocache)) {
+							songRequestManager.CacheSong(value, !tocache);
+						}
+					}
+					break;
+			}
+			UpdateSecPlaylistTabLists();
+		}
+
+		private void CacheALLSongsButton_Click(object sender, EventArgs e) {
+			if (MessageBox.Show("This action will set all songs in the secondary playlist to cache, the app will immediatly start to download all songs caches. Is this ok", "Cache All Songs?", MessageBoxButtons.OKCancel) == DialogResult.OK) {
+				songRequestManager.CacheAllSongs();
+			}
+		}
+
+		private void ClearALLCacheButton_Click(object sender, EventArgs e) {
+			if (MessageBox.Show("This action will set all songs in the secondary playlist to NOT cache, the app will immediatly delete all downloaded songs caches. Is this ok", "Clear All Song Caches?", MessageBoxButtons.OKCancel) == DialogResult.OK) {
+				songRequestManager.ClearSongCaches();
+			}
+		}
 		#endregion
 
 		#region ### SONGREQUESTMANAGER EVENTS ###	
@@ -884,6 +982,7 @@ namespace TwitchBotManager {
 				SaveLinkButton.ThreadSafeAction(e => e.Enabled = true);
 				RemoveSongFromSecondaryButton.ThreadSafeAction(e => e.Enabled = false);
 			}
+			UpdateSongListOutput();
 		}
 
 		private void SongRequestManager_OnProgressbarUpdate(object sender, float e) {
@@ -915,7 +1014,7 @@ namespace TwitchBotManager {
 		}
 
 		private void SongRequestManager_OnNextSong(object sender, bool e) {
-			UpdateSongListOutput();
+
 		}
 		private void SearchInputBox_TextChanged(object sender, EventArgs e) {
 			UpdateSecPlaylistTabLists();
@@ -931,6 +1030,14 @@ namespace TwitchBotManager {
 
 		private void RequesterCheckBox_CheckedChanged(object sender, EventArgs e) {
 			UpdateSecPlaylistTabLists();
+		}
+
+		private void SongRequestManager_OnSongListUpdated(object sender, EventArgs e) {
+			UpdateSongListOutput();
+		}
+
+		private void SongRequestList_SelectedIndexChanged(object sender, EventArgs e) {
+			RemoveSongRequestButton.Enabled = SongRequestList.SelectedItem != null;
 		}
 
 		#endregion

@@ -10,7 +10,7 @@ using TwitchLib.Api.ThirdParty.AuthorizationFlow;
 using TwitchLib.Api.V5.Models.Channels;
 using TwitchLib.Api.V5.Models.Subscriptions;
 
-namespace TwitchBotManager.Code {
+namespace ScoredBot.Code {
 	class TwitchAPIInterfaceObject {
         private static TwitchAPI API;
 

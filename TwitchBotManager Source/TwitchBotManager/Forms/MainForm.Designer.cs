@@ -1,5 +1,5 @@
 ﻿
-namespace TwitchBotManager {
+namespace ScoredBot {
 	partial class MainForm {
 		/// <summary>
 		/// Required designer variable.
@@ -59,11 +59,19 @@ namespace TwitchBotManager {
 			this.SongRequestList = new System.Windows.Forms.ListBox();
 			this.MainTabControl = new System.Windows.Forms.TabControl();
 			this.SongRequestTab = new System.Windows.Forms.TabPage();
+			this.RemoveSongRequestButton = new System.Windows.Forms.Button();
+			this.IncreaseMaxRequestsButton = new System.Windows.Forms.Button();
+			this.DecreaseMaxRequestsButton = new System.Windows.Forms.Button();
+			this.MaxRequestsLabel = new System.Windows.Forms.Label();
 			this.label2 = new System.Windows.Forms.Label();
 			this.CurrentSongDefaultLabel = new System.Windows.Forms.Label();
 			this.RemoveSongFromSecondaryButton = new System.Windows.Forms.Button();
 			this.SkipSongButton = new System.Windows.Forms.Button();
 			this.SecondaryPlaylistManagementTab = new System.Windows.Forms.TabPage();
+			this.ClearALLCacheButton = new System.Windows.Forms.Button();
+			this.CacheALLSongsButton = new System.Windows.Forms.Button();
+			this.CacheSongButton = new System.Windows.Forms.Button();
+			this.CacheSongsRadioBut = new System.Windows.Forms.RadioButton();
 			this.SongDetailsListBox = new System.Windows.Forms.ListBox();
 			this.RequesterCheckBox = new System.Windows.Forms.CheckBox();
 			this.YTCheckBox = new System.Windows.Forms.CheckBox();
@@ -87,14 +95,17 @@ namespace TwitchBotManager {
 			this.SecondaryTextBoxAddField = new System.Windows.Forms.TextBox();
 			this.AddSecondarySongButton = new System.Windows.Forms.Button();
 			this.RemoveSecondarySongButton = new System.Windows.Forms.Button();
+			this.RequestBlacklistTab = new System.Windows.Forms.TabPage();
+			this.label6 = new System.Windows.Forms.Label();
+			this.SettingsTab = new System.Windows.Forms.TabPage();
+			this.tabControl1 = new System.Windows.Forms.TabControl();
+			this.tabPage3 = new System.Windows.Forms.TabPage();
+			this.label7 = new System.Windows.Forms.Label();
 			this.DebugTab = new System.Windows.Forms.TabPage();
 			this.DebugConsoleList = new System.Windows.Forms.ListBox();
 			this.ConnectionLabel = new System.Windows.Forms.Label();
 			this.CurrentSongRequestLabel = new System.Windows.Forms.Label();
 			this.MainProgressBar = new System.Windows.Forms.ProgressBar();
-			this.MaxRequestsLabel = new System.Windows.Forms.Label();
-			this.DecreaseMaxRequestsButton = new System.Windows.Forms.Button();
-			this.IncreaseMaxRequestsButton = new System.Windows.Forms.Button();
 			this.LoadingBar.SuspendLayout();
 			this.MainTabControl.SuspendLayout();
 			this.SongRequestTab.SuspendLayout();
@@ -102,6 +113,10 @@ namespace TwitchBotManager {
 			this.SongListTabs.SuspendLayout();
 			this.tabPage1.SuspendLayout();
 			this.tabPage2.SuspendLayout();
+			this.RequestBlacklistTab.SuspendLayout();
+			this.SettingsTab.SuspendLayout();
+			this.tabControl1.SuspendLayout();
+			this.tabPage3.SuspendLayout();
 			this.DebugTab.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -395,12 +410,16 @@ namespace TwitchBotManager {
 			// SongRequestList
 			// 
 			this.SongRequestList.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+			this.SongRequestList.Cursor = System.Windows.Forms.Cursors.No;
+			this.SongRequestList.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 			this.SongRequestList.FormattingEnabled = true;
+			this.SongRequestList.HorizontalScrollbar = true;
+			this.SongRequestList.ItemHeight = 20;
 			this.SongRequestList.Location = new System.Drawing.Point(8, 105);
 			this.SongRequestList.Name = "SongRequestList";
-			this.SongRequestList.SelectionMode = System.Windows.Forms.SelectionMode.None;
-			this.SongRequestList.Size = new System.Drawing.Size(1098, 316);
+			this.SongRequestList.Size = new System.Drawing.Size(1098, 304);
 			this.SongRequestList.TabIndex = 17;
+			this.SongRequestList.SelectedIndexChanged += new System.EventHandler(this.SongRequestList_SelectedIndexChanged);
 			// 
 			// MainTabControl
 			// 
@@ -409,6 +428,8 @@ namespace TwitchBotManager {
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.MainTabControl.Controls.Add(this.SongRequestTab);
 			this.MainTabControl.Controls.Add(this.SecondaryPlaylistManagementTab);
+			this.MainTabControl.Controls.Add(this.RequestBlacklistTab);
+			this.MainTabControl.Controls.Add(this.SettingsTab);
 			this.MainTabControl.Controls.Add(this.DebugTab);
 			this.MainTabControl.Location = new System.Drawing.Point(0, 27);
 			this.MainTabControl.Multiline = true;
@@ -420,6 +441,7 @@ namespace TwitchBotManager {
 			// 
 			// SongRequestTab
 			// 
+			this.SongRequestTab.Controls.Add(this.RemoveSongRequestButton);
 			this.SongRequestTab.Controls.Add(this.IncreaseMaxRequestsButton);
 			this.SongRequestTab.Controls.Add(this.DecreaseMaxRequestsButton);
 			this.SongRequestTab.Controls.Add(this.MaxRequestsLabel);
@@ -445,6 +467,49 @@ namespace TwitchBotManager {
 			this.SongRequestTab.TabIndex = 0;
 			this.SongRequestTab.Text = "Song Request Tab";
 			this.SongRequestTab.UseVisualStyleBackColor = true;
+			// 
+			// RemoveSongRequestButton
+			// 
+			this.RemoveSongRequestButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+			this.RemoveSongRequestButton.Enabled = false;
+			this.RemoveSongRequestButton.Location = new System.Drawing.Point(835, 74);
+			this.RemoveSongRequestButton.Name = "RemoveSongRequestButton";
+			this.RemoveSongRequestButton.Size = new System.Drawing.Size(102, 23);
+			this.RemoveSongRequestButton.TabIndex = 28;
+			this.RemoveSongRequestButton.Text = "Remove Request";
+			this.RemoveSongRequestButton.UseVisualStyleBackColor = true;
+			this.RemoveSongRequestButton.Click += new System.EventHandler(this.RemoveSongRequestButton_Click);
+			// 
+			// IncreaseMaxRequestsButton
+			// 
+			this.IncreaseMaxRequestsButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.IncreaseMaxRequestsButton.Location = new System.Drawing.Point(396, 16);
+			this.IncreaseMaxRequestsButton.Name = "IncreaseMaxRequestsButton";
+			this.IncreaseMaxRequestsButton.Size = new System.Drawing.Size(25, 25);
+			this.IncreaseMaxRequestsButton.TabIndex = 27;
+			this.IncreaseMaxRequestsButton.Text = "+";
+			this.IncreaseMaxRequestsButton.UseVisualStyleBackColor = true;
+			this.IncreaseMaxRequestsButton.Click += new System.EventHandler(this.IncreaseMaxRequestsButton_Click);
+			// 
+			// DecreaseMaxRequestsButton
+			// 
+			this.DecreaseMaxRequestsButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.DecreaseMaxRequestsButton.Location = new System.Drawing.Point(365, 16);
+			this.DecreaseMaxRequestsButton.Name = "DecreaseMaxRequestsButton";
+			this.DecreaseMaxRequestsButton.Size = new System.Drawing.Size(25, 25);
+			this.DecreaseMaxRequestsButton.TabIndex = 26;
+			this.DecreaseMaxRequestsButton.Text = "-";
+			this.DecreaseMaxRequestsButton.UseVisualStyleBackColor = true;
+			this.DecreaseMaxRequestsButton.Click += new System.EventHandler(this.DecreaseMaxRequestsButton_Click);
+			// 
+			// MaxRequestsLabel
+			// 
+			this.MaxRequestsLabel.AutoSize = true;
+			this.MaxRequestsLabel.Location = new System.Drawing.Point(270, 22);
+			this.MaxRequestsLabel.Name = "MaxRequestsLabel";
+			this.MaxRequestsLabel.Size = new System.Drawing.Size(83, 13);
+			this.MaxRequestsLabel.TabIndex = 25;
+			this.MaxRequestsLabel.Text = "Request Limit: 5";
 			// 
 			// label2
 			// 
@@ -491,6 +556,10 @@ namespace TwitchBotManager {
 			// 
 			// SecondaryPlaylistManagementTab
 			// 
+			this.SecondaryPlaylistManagementTab.Controls.Add(this.ClearALLCacheButton);
+			this.SecondaryPlaylistManagementTab.Controls.Add(this.CacheALLSongsButton);
+			this.SecondaryPlaylistManagementTab.Controls.Add(this.CacheSongButton);
+			this.SecondaryPlaylistManagementTab.Controls.Add(this.CacheSongsRadioBut);
 			this.SecondaryPlaylistManagementTab.Controls.Add(this.SongDetailsListBox);
 			this.SecondaryPlaylistManagementTab.Controls.Add(this.RequesterCheckBox);
 			this.SecondaryPlaylistManagementTab.Controls.Add(this.YTCheckBox);
@@ -513,6 +582,48 @@ namespace TwitchBotManager {
 			this.SecondaryPlaylistManagementTab.Text = "Sec\' Playlist Management";
 			this.SecondaryPlaylistManagementTab.UseVisualStyleBackColor = true;
 			// 
+			// ClearALLCacheButton
+			// 
+			this.ClearALLCacheButton.Location = new System.Drawing.Point(732, 403);
+			this.ClearALLCacheButton.Name = "ClearALLCacheButton";
+			this.ClearALLCacheButton.Size = new System.Drawing.Size(98, 23);
+			this.ClearALLCacheButton.TabIndex = 37;
+			this.ClearALLCacheButton.Text = "Clear All Cache";
+			this.ClearALLCacheButton.UseVisualStyleBackColor = true;
+			this.ClearALLCacheButton.Click += new System.EventHandler(this.ClearALLCacheButton_Click);
+			// 
+			// CacheALLSongsButton
+			// 
+			this.CacheALLSongsButton.Location = new System.Drawing.Point(628, 403);
+			this.CacheALLSongsButton.Name = "CacheALLSongsButton";
+			this.CacheALLSongsButton.Size = new System.Drawing.Size(98, 23);
+			this.CacheALLSongsButton.TabIndex = 36;
+			this.CacheALLSongsButton.Text = "Cache All Songs";
+			this.CacheALLSongsButton.UseVisualStyleBackColor = true;
+			this.CacheALLSongsButton.Click += new System.EventHandler(this.CacheALLSongsButton_Click);
+			// 
+			// CacheSongButton
+			// 
+			this.CacheSongButton.Location = new System.Drawing.Point(628, 240);
+			this.CacheSongButton.Name = "CacheSongButton";
+			this.CacheSongButton.Size = new System.Drawing.Size(115, 23);
+			this.CacheSongButton.TabIndex = 35;
+			this.CacheSongButton.Text = "Toggle AllowCaching";
+			this.CacheSongButton.UseVisualStyleBackColor = true;
+			this.CacheSongButton.Click += new System.EventHandler(this.CacheSongButton_Click);
+			// 
+			// CacheSongsRadioBut
+			// 
+			this.CacheSongsRadioBut.AutoSize = true;
+			this.CacheSongsRadioBut.Location = new System.Drawing.Point(550, 48);
+			this.CacheSongsRadioBut.Name = "CacheSongsRadioBut";
+			this.CacheSongsRadioBut.Size = new System.Drawing.Size(114, 17);
+			this.CacheSongsRadioBut.TabIndex = 34;
+			this.CacheSongsRadioBut.TabStop = true;
+			this.CacheSongsRadioBut.Text = "Cache New Songs";
+			this.CacheSongsRadioBut.UseVisualStyleBackColor = true;
+			this.CacheSongsRadioBut.CheckedChanged += new System.EventHandler(this.CacheSongsRadioBut_CheckedChanged);
+			// 
 			// SongDetailsListBox
 			// 
 			this.SongDetailsListBox.FormattingEnabled = true;
@@ -520,13 +631,13 @@ namespace TwitchBotManager {
 			this.SongDetailsListBox.Location = new System.Drawing.Point(547, 269);
 			this.SongDetailsListBox.Name = "SongDetailsListBox";
 			this.SongDetailsListBox.SelectionMode = System.Windows.Forms.SelectionMode.None;
-			this.SongDetailsListBox.Size = new System.Drawing.Size(559, 121);
+			this.SongDetailsListBox.Size = new System.Drawing.Size(559, 134);
 			this.SongDetailsListBox.TabIndex = 33;
 			// 
 			// RequesterCheckBox
 			// 
 			this.RequesterCheckBox.AutoSize = true;
-			this.RequesterCheckBox.Location = new System.Drawing.Point(789, 120);
+			this.RequesterCheckBox.Location = new System.Drawing.Point(789, 119);
 			this.RequesterCheckBox.Name = "RequesterCheckBox";
 			this.RequesterCheckBox.Size = new System.Drawing.Size(75, 17);
 			this.RequesterCheckBox.TabIndex = 20;
@@ -537,7 +648,7 @@ namespace TwitchBotManager {
 			// YTCheckBox
 			// 
 			this.YTCheckBox.AutoSize = true;
-			this.YTCheckBox.Location = new System.Drawing.Point(715, 120);
+			this.YTCheckBox.Location = new System.Drawing.Point(715, 119);
 			this.YTCheckBox.Name = "YTCheckBox";
 			this.YTCheckBox.Size = new System.Drawing.Size(68, 17);
 			this.YTCheckBox.TabIndex = 19;
@@ -701,7 +812,7 @@ namespace TwitchBotManager {
 			// ClaimSongButton
 			// 
 			this.ClaimSongButton.Enabled = false;
-			this.ClaimSongButton.Location = new System.Drawing.Point(628, 51);
+			this.ClaimSongButton.Location = new System.Drawing.Point(547, 240);
 			this.ClaimSongButton.Name = "ClaimSongButton";
 			this.ClaimSongButton.Size = new System.Drawing.Size(75, 23);
 			this.ClaimSongButton.TabIndex = 11;
@@ -712,7 +823,7 @@ namespace TwitchBotManager {
 			// ClaimAllSongsButton
 			// 
 			this.ClaimAllSongsButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-			this.ClaimAllSongsButton.Location = new System.Drawing.Point(547, 51);
+			this.ClaimAllSongsButton.Location = new System.Drawing.Point(547, 403);
 			this.ClaimAllSongsButton.Name = "ClaimAllSongsButton";
 			this.ClaimAllSongsButton.Size = new System.Drawing.Size(75, 23);
 			this.ClaimAllSongsButton.TabIndex = 10;
@@ -749,6 +860,70 @@ namespace TwitchBotManager {
 			this.RemoveSecondarySongButton.Text = "Remove Song";
 			this.RemoveSecondarySongButton.UseVisualStyleBackColor = true;
 			this.RemoveSecondarySongButton.Click += new System.EventHandler(this.RemoveSecondarySongButton_Click);
+			// 
+			// RequestBlacklistTab
+			// 
+			this.RequestBlacklistTab.Controls.Add(this.label6);
+			this.RequestBlacklistTab.Location = new System.Drawing.Point(4, 22);
+			this.RequestBlacklistTab.Name = "RequestBlacklistTab";
+			this.RequestBlacklistTab.Padding = new System.Windows.Forms.Padding(3);
+			this.RequestBlacklistTab.Size = new System.Drawing.Size(1114, 429);
+			this.RequestBlacklistTab.TabIndex = 5;
+			this.RequestBlacklistTab.Text = "Request Blacklist";
+			this.RequestBlacklistTab.UseVisualStyleBackColor = true;
+			// 
+			// label6
+			// 
+			this.label6.AutoSize = true;
+			this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 20.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.label6.Location = new System.Drawing.Point(6, 3);
+			this.label6.Name = "label6";
+			this.label6.Size = new System.Drawing.Size(264, 31);
+			this.label6.TabIndex = 0;
+			this.label6.Text = "Coming Next Patch";
+			// 
+			// SettingsTab
+			// 
+			this.SettingsTab.Controls.Add(this.tabControl1);
+			this.SettingsTab.Location = new System.Drawing.Point(4, 22);
+			this.SettingsTab.Name = "SettingsTab";
+			this.SettingsTab.Size = new System.Drawing.Size(1114, 429);
+			this.SettingsTab.TabIndex = 4;
+			this.SettingsTab.Text = "Settings";
+			this.SettingsTab.UseVisualStyleBackColor = true;
+			// 
+			// tabControl1
+			// 
+			this.tabControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+			this.tabControl1.Controls.Add(this.tabPage3);
+			this.tabControl1.Location = new System.Drawing.Point(3, 3);
+			this.tabControl1.Name = "tabControl1";
+			this.tabControl1.SelectedIndex = 0;
+			this.tabControl1.Size = new System.Drawing.Size(1108, 423);
+			this.tabControl1.TabIndex = 0;
+			// 
+			// tabPage3
+			// 
+			this.tabPage3.Controls.Add(this.label7);
+			this.tabPage3.Location = new System.Drawing.Point(4, 22);
+			this.tabPage3.Name = "tabPage3";
+			this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
+			this.tabPage3.Size = new System.Drawing.Size(1100, 397);
+			this.tabPage3.TabIndex = 0;
+			this.tabPage3.Text = "Twitch Chat Output";
+			this.tabPage3.UseVisualStyleBackColor = true;
+			// 
+			// label7
+			// 
+			this.label7.AutoSize = true;
+			this.label7.Font = new System.Drawing.Font("Microsoft Sans Serif", 20.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.label7.Location = new System.Drawing.Point(6, 0);
+			this.label7.Name = "label7";
+			this.label7.Size = new System.Drawing.Size(264, 31);
+			this.label7.TabIndex = 1;
+			this.label7.Text = "Coming Next Patch";
 			// 
 			// DebugTab
 			// 
@@ -805,37 +980,6 @@ namespace TwitchBotManager {
 			this.MainProgressBar.Size = new System.Drawing.Size(100, 23);
 			this.MainProgressBar.TabIndex = 21;
 			// 
-			// MaxRequestsLabel
-			// 
-			this.MaxRequestsLabel.AutoSize = true;
-			this.MaxRequestsLabel.Location = new System.Drawing.Point(270, 22);
-			this.MaxRequestsLabel.Name = "MaxRequestsLabel";
-			this.MaxRequestsLabel.Size = new System.Drawing.Size(83, 13);
-			this.MaxRequestsLabel.TabIndex = 25;
-			this.MaxRequestsLabel.Text = "Request Limit: 5";
-			// 
-			// DecreaseMaxRequestsButton
-			// 
-			this.DecreaseMaxRequestsButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.DecreaseMaxRequestsButton.Location = new System.Drawing.Point(365, 16);
-			this.DecreaseMaxRequestsButton.Name = "DecreaseMaxRequestsButton";
-			this.DecreaseMaxRequestsButton.Size = new System.Drawing.Size(25, 25);
-			this.DecreaseMaxRequestsButton.TabIndex = 26;
-			this.DecreaseMaxRequestsButton.Text = "-";
-			this.DecreaseMaxRequestsButton.UseVisualStyleBackColor = true;
-			this.DecreaseMaxRequestsButton.Click += new System.EventHandler(this.DecreaseMaxRequestsButton_Click);
-			// 
-			// IncreaseMaxRequestsButton
-			// 
-			this.IncreaseMaxRequestsButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.IncreaseMaxRequestsButton.Location = new System.Drawing.Point(396, 16);
-			this.IncreaseMaxRequestsButton.Name = "IncreaseMaxRequestsButton";
-			this.IncreaseMaxRequestsButton.Size = new System.Drawing.Size(25, 25);
-			this.IncreaseMaxRequestsButton.TabIndex = 27;
-			this.IncreaseMaxRequestsButton.Text = "+";
-			this.IncreaseMaxRequestsButton.UseVisualStyleBackColor = true;
-			this.IncreaseMaxRequestsButton.Click += new System.EventHandler(this.IncreaseMaxRequestsButton_Click);
-			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -866,6 +1010,12 @@ namespace TwitchBotManager {
 			this.tabPage1.PerformLayout();
 			this.tabPage2.ResumeLayout(false);
 			this.tabPage2.PerformLayout();
+			this.RequestBlacklistTab.ResumeLayout(false);
+			this.RequestBlacklistTab.PerformLayout();
+			this.SettingsTab.ResumeLayout(false);
+			this.tabControl1.ResumeLayout(false);
+			this.tabPage3.ResumeLayout(false);
+			this.tabPage3.PerformLayout();
 			this.DebugTab.ResumeLayout(false);
 			this.ResumeLayout(false);
 			this.PerformLayout();
@@ -944,6 +1094,17 @@ namespace TwitchBotManager {
 		private System.Windows.Forms.Label MaxRequestsLabel;
 		private System.Windows.Forms.Button IncreaseMaxRequestsButton;
 		private System.Windows.Forms.Button DecreaseMaxRequestsButton;
+		private System.Windows.Forms.TabPage SettingsTab;
+		private System.Windows.Forms.TabControl tabControl1;
+		private System.Windows.Forms.TabPage tabPage3;
+		private System.Windows.Forms.Button RemoveSongRequestButton;
+		private System.Windows.Forms.TabPage RequestBlacklistTab;
+		private System.Windows.Forms.Label label6;
+		private System.Windows.Forms.Label label7;
+		private System.Windows.Forms.RadioButton CacheSongsRadioBut;
+		private System.Windows.Forms.Button CacheSongButton;
+		private System.Windows.Forms.Button ClearALLCacheButton;
+		private System.Windows.Forms.Button CacheALLSongsButton;
 	}
 }
 

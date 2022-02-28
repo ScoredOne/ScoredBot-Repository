@@ -1,4 +1,4 @@
-﻿namespace TwitchBotManager.Code.Classes {
+﻿namespace ScoredBot.Code.Classes {
 	public class SongOutputText {
 
 		private string _inputstring;

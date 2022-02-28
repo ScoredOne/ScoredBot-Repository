@@ -221,6 +221,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Code\Classes\ProgramSettings.cs" />
     <Compile Include="Code\Classes\SongRequestManager.cs" />
     <Compile Include="Code\GlobalFunctions.cs" />
     <Compile Include="Code\Classes\SongOutputText.cs" />
@@ -298,12 +299,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Nothing.wav">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ScoredBotVersion.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="VersionChanges.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -414,7 +409,7 @@
     <VlcWindowsX64ExcludeFiles Include="plugins\demux\libdemuxdump_plugin.dll" />
     <VlcWindowsX64ExcludeFiles Include="plugins\demux\libdiracsys_plugin.dll" />
     <!--<VlcWindowsX64ExcludeFiles Include="plugins\demux\libdirectory_demux_plugin.dll"/>-->
-    <VlcWindowsX64ExcludeFiles Include="plugins\demux\libes_plugin.dll" />
+    <!--<VlcWindowsX64ExcludeFiles Include="plugins\demux\libes_plugin.dll" />-->
     <VlcWindowsX64ExcludeFiles Include="plugins\demux\libflacsys_plugin.dll" />
     <VlcWindowsX64ExcludeFiles Include="plugins\demux\libgme_plugin.dll" />
     <VlcWindowsX64ExcludeFiles Include="plugins\demux\libh26x_plugin.dll" />
@@ -464,7 +459,20 @@
     <VlcWindowsX64ExcludeFiles Include="plugins\misc\libvod_rtsp_plugin.dll" />
     <VlcWindowsX64ExcludeFiles Include="plugins\misc\libxml_plugin.dll" />
     <VlcWindowsX64ExcludeFiles Include="plugins\mux\%2A" />
-    <VlcWindowsX64ExcludeFiles Include="plugins\packetizer\%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\packetizer\libpacketizer_a52_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\packetizer\libpacketizer_av1_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\packetizer\libpacketizer_copy_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\packetizer\libpacketizer_dirac_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\packetizer\libpacketizer_dts_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\packetizer\libpacketizer_flac_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\packetizer\libpacketizer_h264_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\packetizer\libpacketizer_hevc_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\packetizer\libpacketizer_mlp_plugin.dll" />
+    <!--<VlcWindowsX64ExcludeFiles Include="plugins\packetizer\libpacketizer_mpeg4audio_plugin.dll" />-->
+    <VlcWindowsX64ExcludeFiles Include="plugins\packetizer\libpacketizer_mpeg4video_plugin.dll" />
+    <!--<VlcWindowsX64ExcludeFiles Include="plugins\packetizer\libpacketizer_mpegaudio_plugin.dll" />-->
+    <VlcWindowsX64ExcludeFiles Include="plugins\packetizer\libpacketizer_mpegvideo_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\packetizer\libpacketizer_vc1_plugin.dll" />
     <VlcWindowsX64ExcludeFiles Include="plugins\services_discovery\%2A" />
     <VlcWindowsX64ExcludeFiles Include="plugins\spu\%2A" />
     <VlcWindowsX64ExcludeFiles Include="plugins\stream_extractor\%2A" />
@@ -473,7 +481,7 @@
     <VlcWindowsX64ExcludeFiles Include="plugins\text_renderer\%2A" />
     <VlcWindowsX64ExcludeFiles Include="plugins\video_chroma\%2A" />
     <VlcWindowsX64ExcludeFiles Include="plugins\video_filter\%2A" />
-    <!--<VlcWindowsX64ExcludeFiles Include="plugins\video_output\%2A"/>-->
+    <VlcWindowsX64ExcludeFiles Include="plugins\video_output\%2A"/>
     <VlcWindowsX64ExcludeFiles Include="plugins\video_splitter\%2A" />
     <VlcWindowsX64ExcludeFiles Include="plugins\visualization\%2A" />
   </ItemGroup>

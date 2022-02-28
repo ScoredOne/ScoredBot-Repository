@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-using TwitchBotManager.Code.Classes;
+using ScoredBot.Code.Classes;
 
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
@@ -15,7 +14,7 @@ using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Models;
 
-namespace TwitchBotManager.Code {
+namespace ScoredBot.Code {
 
 	public enum SongRequestCommandType {
 		CurrentSong,
@@ -33,19 +32,19 @@ namespace TwitchBotManager.Code {
 	public class BotCommandContainer : EventArgs {
 		public SongRequestCommandType CommandType { get; private set; }
 		public string User { get; private set; }
-		public string Command { get; private set; }
+		public List<string> Commands { get; private set; }
 		public object Additional { get; private set; }
 
-		public BotCommandContainer(SongRequestCommandType commandType, string user, string command, object additional = null) {
+		public BotCommandContainer(SongRequestCommandType commandType, string user, List<string> commands, object additional = null) {
 			CommandType = commandType;
 			User = user;
-			Command = command;
+			Commands = commands;
 			Additional = additional;
 		}
 	}
 
 	public class TwitchBot {
-		private Timer UpdateTimer;
+		//private Timer UpdateTimer;
 
 		private readonly TwitchClient client;
 
@@ -78,6 +77,7 @@ namespace TwitchBotManager.Code {
 		public event EventHandler<BotCommandContainer> OnPauseSongRequests;
 		public event EventHandler<BotCommandContainer> OnPlaySongRequests;
 		public event EventHandler<BotCommandContainer> OnClearSongRequests;
+		public event EventHandler<BotCommandContainer> OnMODRemoveSong;
 
 		public event EventHandler<EventArgs> OnConnectionError;
 
@@ -94,8 +94,8 @@ namespace TwitchBotManager.Code {
 					OnCurrentSong?.Invoke(null, new BotCommandContainer(SongRequestCommandType.CurrentSong, e.ChatMessage.Username, null));
 				}},
 				{"remove", (e, f) => {
-					if (f.Count > 2) {
-						OnRemoveSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.RemoveSong, e.ChatMessage.Username, f[2])); // Remove index
+					if (f != null) {
+						OnRemoveSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.RemoveSong, e.ChatMessage.Username, f)); // Remove index
 					} else {
 						OnRemoveSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.RemoveSong, e.ChatMessage.Username, null)); // Remove first
 					}
@@ -110,29 +110,36 @@ namespace TwitchBotManager.Code {
 					OnPrintUserSongRequests.Invoke(null, new BotCommandContainer(SongRequestCommandType.PrintUserSongRequest, e.ChatMessage.Username, null));
 				}},
 				{"skip", (e, f) => {
-					if (e.ChatMessage.IsModerator) {
+					if (e.ChatMessage.IsModerator || e.ChatMessage.IsMe || e.ChatMessage.IsBroadcaster) {
 						OnSkipSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.SkipSong, e.ChatMessage.Username, null));
 					} else {
 						client.SendMessage(TwitchUsername, e.ChatMessage.Username + " : You do not have permission to use this command.");
 					}
 				}},
 				{"pause", (e, f) => {
-					if (e.ChatMessage.IsModerator) {
+					if (e.ChatMessage.IsModerator || e.ChatMessage.IsMe || e.ChatMessage.IsBroadcaster) {
 						OnPauseSongRequests.Invoke(null, new BotCommandContainer(SongRequestCommandType.PauseSongRequests, e.ChatMessage.Username, null));
 					} else {
 						client.SendMessage(TwitchUsername, e.ChatMessage.Username + " : You do not have permission to use this command.");
 					}
 				}},
 				{"play", (e, f) => {
-					if (e.ChatMessage.IsModerator) {
+					if (e.ChatMessage.IsModerator || e.ChatMessage.IsMe || e.ChatMessage.IsBroadcaster) {
 						OnPlaySongRequests.Invoke(null, new BotCommandContainer(SongRequestCommandType.PlaySongRequests, e.ChatMessage.Username, null));
 					} else {
 						client.SendMessage(TwitchUsername, e.ChatMessage.Username + " : You do not have permission to use this command.");
 					}
 				}},
 				{"clear", (e, f) => {
-					if (e.ChatMessage.IsModerator) {
+					if (e.ChatMessage.IsModerator || e.ChatMessage.IsMe || e.ChatMessage.IsBroadcaster) {
 						OnClearSongRequests.Invoke(null, new BotCommandContainer(SongRequestCommandType.ClearSongRequests, e.ChatMessage.Username, null));
+					} else {
+						client.SendMessage(TwitchUsername, e.ChatMessage.Username + " : You do not have permission to use this command.");
+					}
+				}},
+				{"modremovesong", (e, f) => {
+					if ((e.ChatMessage.IsModerator || e.ChatMessage.IsMe || e.ChatMessage.IsBroadcaster) && f != null) {
+						OnMODRemoveSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.ClearSongRequests, e.ChatMessage.Username, f)); // Remove index
 					} else {
 						client.SendMessage(TwitchUsername, e.ChatMessage.Username + " : You do not have permission to use this command.");
 					}
@@ -148,7 +155,8 @@ namespace TwitchBotManager.Code {
 								" skip (MOD ONLY) = Skips the current song ||" +
 								" play (MOD ONLY) = Plays the current song ||" +
 								" pause (MOD ONLY) = Pauses the current song ||" +
-								" clear (MOD ONLY) = Wipes the current song list");
+								" clear (MOD ONLY) = Wipes the current song list ||" +
+								" modremovesong *media link* (MOD ONLY) = Remove songs a user has added");
 				}},
 				{"", (e, f) => {
 					client.SendMessage(TwitchUsername, AboutText); // Help text or bot info 
@@ -265,14 +273,17 @@ namespace TwitchBotManager.Code {
 			List<string> MessageText = e.ChatMessage.Message.Split(' ').ToList();
 			MessageText.RemoveAll(x => string.IsNullOrEmpty(x));
 
-			if (MessageText[0].Equals(SongCommandPrefix, StringComparison.CurrentCultureIgnoreCase)) {
+			if (BlacklistedWords.Any(x => e.ChatMessage.Message.Contains(x))) {
+				client.TimeoutUser(e.ChatMessage.Channel, e.ChatMessage.Username, TimeSpan.FromMinutes(30), "YOU HAD TO GO THERE! 30 minute timeout!");
+			} else if (MessageText[0].Equals(SongCommandPrefix, StringComparison.CurrentCultureIgnoreCase)) {
 				if (OutputProcessingCommandMessage) {
 					client.SendMessage(TwitchUsername, @"/me Command Received");
 				}
-
 				if (MessageText.Count > 1) {
 					if (CommandDictionary.ContainsKey(MessageText[1])) {
-						CommandDictionary[MessageText[1]].Invoke(e, MessageText);
+						List<string> commands = MessageText.ToList();
+						commands.RemoveRange(0, 2);
+						CommandDictionary[MessageText[1]].Invoke(e, commands.Count > 0 ? commands : null);
 					} else {
 						// Song request link
 						ReceiveSongRequest(e.ChatMessage.Username, MessageText[1]);
@@ -282,14 +293,11 @@ namespace TwitchBotManager.Code {
 				}
 			}
 
-			if (BlacklistedWords.Any(x => e.ChatMessage.Message.Contains(x))) {
-				client.TimeoutUser(e.ChatMessage.Channel, e.ChatMessage.Username, TimeSpan.FromMinutes(30), "YOU HAD TO GO THERE! 30 minute timeout!");
-			}
 		}
 
 		public void ReceiveSongRequest(string user, string commandlink) {
 			if (GlobalFunctions.GetYouTubeVideoID(commandlink, out string ID)) {
-				OnAddSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.AddSong, user, commandlink));
+				OnAddSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.AddSong, user, new List<string>() { commandlink }));
 			} else {
 				client.SendMessage(TwitchUsername, user + " Your link wasn't recognised, please use links from YouTube.com to add song requests.");
 			}

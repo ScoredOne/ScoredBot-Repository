@@ -1,5 +1,5 @@
 ﻿
-namespace TwitchBotManager {
+namespace ScoredBot {
 	partial class TwitchLoginForm {
 		/// <summary>
 		/// Required designer variable.

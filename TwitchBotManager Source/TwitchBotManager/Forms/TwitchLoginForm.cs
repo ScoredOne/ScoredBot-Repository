@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
 
-namespace TwitchBotManager {
+namespace ScoredBot {
 	public partial class TwitchLoginForm : Form {
 		private readonly MainForm ParentObject;
 

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 
@@ -12,9 +11,11 @@ using Newtonsoft.Json;
 using YoutubeDLSharp;
 using YoutubeDLSharp.Metadata;
 
-namespace TwitchBotManager.Code.Classes {
+namespace ScoredBot.Code.Classes {
 
+#pragma warning disable CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
 	public class SongDataContainer {
+#pragma warning restore CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
 
 		/// <summary>
 		/// Youtube Link
@@ -75,6 +76,11 @@ namespace TwitchBotManager.Code.Classes {
 		public bool PingValid => DateTime.Now < new DateTime(LastValidPing.Ticks).AddDays(14);
 
 		/// <summary>
+		/// Setting to determine if the app will keep the song cache at all times or download when required.
+		/// </summary>
+		public bool AllowCaching { get; set; }
+
+		/// <summary>
 		/// If the file is Local so pings to the internet and redownloads are not required.
 		/// Disables requirements for other values such as Link and Title, but relies on AudioCached always being true.
 		/// </summary>
@@ -107,15 +113,22 @@ namespace TwitchBotManager.Code.Classes {
 		/// <summary>
 		/// Song Constructor for local/secondary playlist files
 		/// </summary>
-		public static SongDataContainer CreateNewContainer(string dirLocation, string requester, string link = "", DateTime lastpingdate = new DateTime(), string title = "", int length = 0, bool failedping = false, bool local = false) {
+		public static SongDataContainer CreateNewContainer(string dirLocation, string requester, string link = "", DateTime lastpingdate = new DateTime(), string title = "", int length = 0, bool failedping = false, bool cachesetting = false, bool local = false) {
+			string cleanedLink = link;
+
+			if (GlobalFunctions.GetYouTubeVideoID(cleanedLink, out string ID)) {
+				cleanedLink = $"https://www.youtube.com/watch?v={ID}";
+			}
+
 			return new SongDataContainer() {
-				Link = link,
+				Link = cleanedLink,
 				OriginalRequester = requester,
 				Title = title,
 				LengthSec = length,
 				DirLocation = dirLocation.Replace(Directory.GetCurrentDirectory(), ""),
 				LastValidPing = lastpingdate,
 				LastPingFailed = failedping,
+				AllowCaching = cachesetting,
 				LocalFile = local
 			};
 		}
@@ -128,10 +141,17 @@ namespace TwitchBotManager.Code.Classes {
 		/// <param name="youtubeDL"></param>
 		/// <param name="getaudiodata"></param>
 		public async static Task<SongDataContainer> CreateNewContainer(string link, string requester, YoutubeDL youtubeDL, bool getaudiodata = false) {
+			string cleanedLink = link;
+			
+			if (GlobalFunctions.GetYouTubeVideoID(cleanedLink, out string ID)) {
+				cleanedLink = $"https://www.youtube.com/watch?v={ID}";
+			}
+
 			SongDataContainer container = new SongDataContainer() {
-				Link = link,
+				Link = cleanedLink,
 				OriginalRequester = requester,
-				LocalFile = false
+				LocalFile = false,
+				AllowCaching = getaudiodata
 			};
 
 			if (youtubeDL == null) {
@@ -156,19 +176,20 @@ namespace TwitchBotManager.Code.Classes {
 		public string OutputString(string Requester = "", bool newLines = false) {
 			string output = "";
 
-			output += $"{(newLines ? Environment.NewLine : string.Empty)}| Title | : {(string.IsNullOrEmpty(Title) ? "#TITLE MISSING#" : Title)} ";
-
-			output += $"{(newLines ? Environment.NewLine : string.Empty)}| Link | : {(string.IsNullOrEmpty(Link) ? "#LINK MISSING#" : (string.IsNullOrEmpty(ShortLink) ? Link : ShortLink))} ";
-
 			if (string.IsNullOrEmpty(Requester)) {
-				output += $"{(newLines ? Environment.NewLine : string.Empty)}| Requester | : {(string.IsNullOrEmpty(OriginalRequester) ? "#REQUESTER MISSING#" : OriginalRequester)} ";
+				output += $"{(newLines ? Environment.NewLine : string.Empty)} {(string.IsNullOrEmpty(OriginalRequester) ? "#REQUESTER MISSING#" : OriginalRequester)}";
 			} else {
-				output += $"{(newLines ? Environment.NewLine : string.Empty)}| Requester | : {Requester} ";
+				output += $"{(newLines ? Environment.NewLine : string.Empty)} {Requester}";
 			}
-			
-			if (LengthSec > 0) {
-				output += $"{(newLines ? Environment.NewLine : string.Empty)}| Duration | : {LengthInTime} ";
+
+			output += $"{(newLines ? Environment.NewLine : string.Empty)} - {(string.IsNullOrEmpty(Title) ? "#TITLE MISSING#" : Title)}";
+
+			output += $"{(newLines ? Environment.NewLine : string.Empty)} ({LengthInTime}) ";
+
+			if (GlobalFunctions.GetYouTubeVideoID(Link, out string ID)) {
+				output += $"{(newLines ? Environment.NewLine : string.Empty)} [{ID}] ";
 			}
+
 			return output;
 		}
 
@@ -188,8 +209,36 @@ namespace TwitchBotManager.Code.Classes {
 				{ nameof(PingValid), PingValid.ToString() },
 				{ nameof(LocalFile), LocalFile.ToString() },
 				{ nameof(AudioCached), AudioCached().ToString() },
-				{ nameof(UniqueSystemID), UniqueSystemID }
+				{ nameof(UniqueSystemID), UniqueSystemID },
+				{ nameof(AllowCaching), AllowCaching.ToString()}
 			};
+		}
+
+		public static bool operator ==(SongDataContainer a, SongDataContainer b) {
+			if (a is null && b is null) {
+				return true;
+			} else if (a is null || b is null) {
+				return false;
+			}
+			NameValueCollection aCollection = a.OutputDataValues();
+			NameValueCollection bCollection = b.OutputDataValues();
+			List<string> aList = new List<string>() { 
+				aCollection[nameof(Link)], 
+				aCollection[nameof(OriginalRequester)], 
+				aCollection[nameof(Title)],
+				aCollection[nameof(LengthSec)],
+				aCollection[nameof(DirLocation)], };
+			List<string> bList = new List<string>() {
+				bCollection[nameof(Link)],
+				bCollection[nameof(OriginalRequester)],
+				bCollection[nameof(Title)],
+				bCollection[nameof(LengthSec)],
+				bCollection[nameof(DirLocation)], };
+			return aList.SequenceEqual(bList);
+		}
+
+		public static bool operator !=(SongDataContainer a, SongDataContainer b) {
+			return !(a == b);
 		}
 
 		/// <summary>
@@ -197,8 +246,25 @@ namespace TwitchBotManager.Code.Classes {
 		/// </summary>
 		/// <param name="value"></param>
 		/// <returns></returns>
-		public static SongDataContainer ConvertFromJSONData(string value) {
+		public static SongDataContainer ConvertFromJSONData(string value, out List<string> MissingEntries) {
 			NameValueCollection valuePairs = GlobalFunctions.ParseDictionaryToNVC(new JavaScriptSerializer().Deserialize<Dictionary<string, string>>(value));
+
+			MissingEntries = new List<string>();
+			foreach (string entry in new List<string>() { 
+				"LocalFile", 
+				"Link", 
+				"DirLocation", 
+				"OriginalRequester", 
+				"LastValidPing", 
+				"Title", 
+				"LengthSec", 
+				"LastPingFailed",
+				"AllowCaching"
+			}) {
+				if (!valuePairs.AllKeys.Contains(entry)) {
+					MissingEntries.Add(entry);
+				}
+			}
 
 			if (bool.TryParse(valuePairs["LocalFile"], out bool boolvalue) && boolvalue) { // Local
 				if (valuePairs["DirLocation"] == null || !File.Exists(valuePairs["DirLocation"])) {
@@ -211,6 +277,7 @@ namespace TwitchBotManager.Code.Classes {
 						string.IsNullOrEmpty(valuePairs["Title"]) ? "#DATA MISSING#" : valuePairs["Title"],
 						int.TryParse(valuePairs["LengthSec"], out int length) ? length : 0,
 						bool.TryParse(valuePairs["LastPingFailed"], out bool failping) && failping,
+						bool.TryParse(valuePairs["AllowCaching"], out bool cacheping) && cacheping,
 						boolvalue);
 				}
 			} else {
@@ -224,6 +291,7 @@ namespace TwitchBotManager.Code.Classes {
 						string.IsNullOrEmpty(valuePairs["Title"]) ? "#DATA MISSING#" : valuePairs["Title"],
 						int.TryParse(valuePairs["LengthSec"], out int length) ? length : 0,
 						bool.TryParse(valuePairs["LastPingFailed"], out bool failping) && failping,
+						bool.TryParse(valuePairs["AllowCaching"], out bool cacheping) && cacheping,
 						boolvalue);
 				}
 			}
@@ -231,7 +299,7 @@ namespace TwitchBotManager.Code.Classes {
 
 		public void ReadJSONData(string value) {
 			NameValueCollection valuePairs = GlobalFunctions.ParseDictionaryToNVC(new JavaScriptSerializer().Deserialize<Dictionary<string, string>>(value));
-
+			
 			Link = valuePairs["Link"];
 
 			OriginalRequester = valuePairs["OriginalRequester"];
@@ -254,10 +322,16 @@ namespace TwitchBotManager.Code.Classes {
 				LastPingFailed = false;
 			}
 
-			if (bool.TryParse(valuePairs["LocalFile"], out bool boolvalue)) {
-				LocalFile = boolvalue;
+			if (bool.TryParse(valuePairs["LocalFile"], out bool localbool)) {
+				LocalFile = localbool;
 			} else {
 				LocalFile = false;
+			}
+
+			if (bool.TryParse(valuePairs["AllowCaching"], out bool cachingbool)) {
+				AllowCaching = cachingbool;
+			} else {
+				AllowCaching = true; // TODO : change back to false after a couple versions
 			}
 		}
 
@@ -267,7 +341,7 @@ namespace TwitchBotManager.Code.Classes {
 			}
 
 			if (InformationAquireTask != null) {
-				await InformationAquireTask;
+				InformationAquireTask.Wait();
 				return;
 			} else if (LocalFile) {
 				MainForm.StaticPostToDebug($"GetYouTubeVideoInformation: Skipped {(string.IsNullOrEmpty(Title) ? Link : Title)} data, Song is Local.");
@@ -345,6 +419,7 @@ namespace TwitchBotManager.Code.Classes {
 			}
 
 			DownloadWorking = false;
+			InformationAquireTask.Dispose();
 			InformationAquireTask = null;
 			return;
 		}
@@ -407,6 +482,7 @@ namespace TwitchBotManager.Code.Classes {
 					string newFilename = $"{Path.GetDirectoryName(Youtubedata.Data)}\\{ID} - {filenameTitle}{extension}";
 
 					try {
+						await Task.Delay(100);
 						bool check;
 						do { // Youtube-dl might still be processing the file so wait until it is created then rename
 							check = true;
@@ -418,7 +494,6 @@ namespace TwitchBotManager.Code.Classes {
 									break;
 								}
 							}
-							await Task.Delay(1000);
 						} while (check);
 					} catch (Exception e) {
 						MainForm.StaticPostToDebug($"Rename function failed on {Title} : {e.Message}");
