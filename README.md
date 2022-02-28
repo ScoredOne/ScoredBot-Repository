@@ -2,14 +2,14 @@
  ScoredBot Twitch bot. Created by ScoredOne.
  
  #### About
- - Currently version 0.2.5
+ - Currently version 0.2.6
  - Uses LibVLC, youtube-dl and FFMPEG to download and manage song requests.
  - Made to be a dedicated bot for a streamer to manage all aspects of their stream. From song requests, deep chat management and beyond.
  
  #### Features:
  - Currently Song Requests is the only major feature included with the bot.
- - Offline Song Request system implemented.
- - Caches all secondary playlist songs and the next few songs that will play next.
+ - Option to Caches all secondary playlist songs and the next few songs that will play next.
+ - Commands included for Twitch chat to manage their requests and the player.
  - Bot login can be entered via Bot Login -> Enter Bot Login Details.
  - Twitch OAuth can be found here: [Twitch OAuth](https://twitchapps.com/tmi/)
  
