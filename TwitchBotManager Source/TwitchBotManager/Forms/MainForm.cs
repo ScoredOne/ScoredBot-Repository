@@ -113,6 +113,8 @@ namespace ScoredBot {
 
 			MaxRequestsLabel.Text = $"Request Limit: {ProgramSettings.AppSettings.AppMusicMaxRequests}";
 
+			CacheSongsRadioBut.Checked = ProgramSettings.AppSettings.CacheNewSongs;
+
 			twitchAPI = new TwitchAPIInterfaceObject(ProgramSettings.AppSettings.OAuth,
 				ProgramSettings.AppSettings.Secret); // Need more info to set this up
 
@@ -933,7 +935,7 @@ namespace ScoredBot {
 		}
 
 		private void CacheSongsRadioBut_CheckedChanged(object sender, EventArgs e) {
-			songRequestManager.SetNewSongsToCache = CacheSongsRadioBut.Checked;
+			ProgramSettings.AppSettings.CacheNewSongs = CacheSongsRadioBut.Checked;
 		}
 
 		private void CacheSongButton_Click(object sender, EventArgs e) {

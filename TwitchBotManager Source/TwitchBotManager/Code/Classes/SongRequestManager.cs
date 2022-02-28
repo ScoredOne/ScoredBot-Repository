@@ -122,8 +122,6 @@ namespace ScoredBot.Code.Classes {
 
 		public int SongCacheAmount { get; set; }
 
-		public bool SetNewSongsToCache { get; set; }
-
 		public bool IsLoading { get; private set; } = false;
 
 		public bool IsPlaying { get; private set; } = false;
@@ -976,7 +974,7 @@ namespace ScoredBot.Code.Classes {
 					return true;
 				}
 				CurrentSong.SongData.OriginalRequester = CurrentSong.Requester;
-				CurrentSong.SongData.AllowCaching = SetNewSongsToCache;
+				CurrentSong.SongData.AllowCaching = ProgramSettings.AppSettings.CacheNewSongs;
 
 				File.AppendAllText(Directory.GetCurrentDirectory() + @"\Outputs\SongRequestData.txt", JsonConvert.SerializeObject(CurrentSong.SongData) + Environment.NewLine);
 				MainForm.StaticPostToDebug(CurrentSong.SongData.Title + " Saved to Secondary Playlist.");
@@ -1055,15 +1053,16 @@ namespace ScoredBot.Code.Classes {
 				}
 
 				SongDataContainer song = await SongDataContainer.CreateNewContainer(address, requester, YoutubeDLWorker);
-				ProcessIDGeneration();
 
 				if (song.PingValid) {
 					SecondarySongPlaylist.Add(song, false);
+					ProcessIDGeneration();
 					WriteSingleSongToFile(song);
-					song.AllowCaching = SetNewSongsToCache;
-					if (SetNewSongsToCache) {
+					song.AllowCaching = ProgramSettings.AppSettings.CacheNewSongs;
+					if (ProgramSettings.AppSettings.CacheNewSongs) {
 						await song.GetYouTubeAudioData(YoutubeDLWorker);
 					}
+					OnSecondaryPlaylistUpdated.Invoke(this, EventArgs.Empty);
 					return true;
 				} else {
 					MainForm.StaticPostToDebug($"YouTube link: {address} : Invalid. Ping returned Errors.");
