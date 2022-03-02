@@ -623,7 +623,7 @@ namespace ScoredBot {
 			} else {
 				ProgramSettings.AppSettings.AppMusicMaxRequests = 1;
 			}
-
+			MaxRequestsLabel.ThreadSafeAction(e => e.Text = $"Request Limit: {ProgramSettings.AppSettings.AppMusicMaxRequests}");
 			PostToDebug.Invoke("Max User Requests set to " + ProgramSettings.AppSettings.AppMusicMaxRequests.ToString());
 		}
 
@@ -633,7 +633,7 @@ namespace ScoredBot {
 			} else {
 				ProgramSettings.AppSettings.AppMusicMaxRequests = 100;
 			}
-
+			MaxRequestsLabel.ThreadSafeAction(e => e.Text = $"Request Limit: {ProgramSettings.AppSettings.AppMusicMaxRequests}");
 			PostToDebug.Invoke("Max User Requests set to " + ProgramSettings.AppSettings.AppMusicMaxRequests.ToString());
 		}
 
