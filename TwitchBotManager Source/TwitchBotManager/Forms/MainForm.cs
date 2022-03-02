@@ -497,11 +497,11 @@ namespace ScoredBot {
 			if (songlistout.Count() == 0) {
 				twitchBot.SendMessageToTwitchChat($"@{e.User} Song List is currently empty.");
 			} else {
-				string Output = $"@{e.User} Song List, Next {(songlistout.Count() > 4 ? 5 : songlistout.Count())} songs :: ";
-				int count = 0;
+				int count = songlistout.Count() > 4 ? 5 : songlistout.Count();
+				string Output = $"@{e.User} Song List, Next {count} songs :: ";
 
-				foreach (string song in songlistout) {
-					Output += $"|| #{++count}. {song} ";
+				for (int x = 0; x < count; x++) {
+					Output += $"|| #{x + 1}. {songlistout.ElementAt(x)} ";
 				}
 
 				twitchBot.SendMessageToTwitchChat(Output);

@@ -615,7 +615,7 @@ namespace ScoredBot.Code.Classes {
 
 						MainForm.StaticPostToDebug($"Secondary Playlist Cache Loading with {SecondarySongPlaylist.Count} Songs.");
 
-						Task.WhenAll(SecondarySongPlaylist.TakeWhile(e => e.Key.AllowCaching).Select(e => e.Key.GetYouTubeAudioData(YoutubeDLWorker)))
+						Task.WhenAll(SecondarySongPlaylist.Where(e => e.Key.AllowCaching).Select(e => e.Key.GetYouTubeAudioData(YoutubeDLWorker)))
 							.ContinueWith(x => {
 								ProcessIDGeneration();
 
@@ -803,7 +803,7 @@ namespace ScoredBot.Code.Classes {
 				Songlist.AddLast(new TwitchRequestedSong(newsong, requester));
 
 				//await Task.WhenAll(Songlist.Take(RequestsCacheAmount > Songlist.Count ? Songlist.Count : RequestsCacheAmount.Value)
-				//	.TakeWhile(e => !e.SongData.AudioCached() && !e.SongData.DownloadWorking)
+				//	.Where(e => !e.SongData.AudioCached() && !e.SongData.DownloadWorking)
 				//	.Select(e => e.SongData.GetYouTubeAudioData(YoutubeDLWorker))
 				//	.ToArray());
 
@@ -835,11 +835,11 @@ namespace ScoredBot.Code.Classes {
 						await CurrentSong.SongData.DeleteCache();
 					}
 
-					await Task.WhenAll(TakenList.TakeWhile(e => !e.LocalFile && !e.AudioCached())
+					await Task.WhenAll(TakenList.Where(e => !e.LocalFile && !e.AudioCached())
 						.Select(e => e.GetYouTubeAudioData(YoutubeDLWorker))
 						.ToArray());
 				} else {
-					await Task.WhenAll(Songlist.Requests.Select(e => e.SongData).TakeWhile(e => !e.LocalFile && !e.AudioCached())
+					await Task.WhenAll(Songlist.Requests.Select(e => e.SongData).Where(e => !e.LocalFile && !e.AudioCached())
 						.Select(e => e.GetYouTubeAudioData(YoutubeDLWorker))
 						.ToArray());
 				}
@@ -1104,7 +1104,7 @@ namespace ScoredBot.Code.Classes {
 
 		public string RemoveLastSongByUser(string requester) {
 			if (Songlist.Requests.Any(e => e.Requester.Equals(requester))) {
-				TwitchRequestedSong song = Songlist.Requests.TakeWhile(e => e.Requester.Equals(requester)).Last();
+				TwitchRequestedSong song = Songlist.Requests.Where(e => e.Requester.Equals(requester)).Last();
 				Songlist.Remove(song);
 				return $"@{requester} : {song.SongData.Title} Has been removed.";
 			} else {
@@ -1114,7 +1114,7 @@ namespace ScoredBot.Code.Classes {
 
 		public string RemoveIndexSongByUser(string requester, int index) {
 			if (Songlist.Requests.Any(e => e.Requester.Equals(requester))) {
-				IEnumerable<TwitchRequestedSong> songs = Songlist.Requests.TakeWhile(e => e.Requester.Equals(requester));
+				IEnumerable<TwitchRequestedSong> songs = Songlist.Requests.Where(e => e.Requester.Equals(requester));
 				if (index > songs.Count()) {
 					return $"@{requester} : Index value '{index}' not found in requests.";
 				} else {
@@ -1172,7 +1172,7 @@ namespace ScoredBot.Code.Classes {
 		public string PrintRequesterSongList(string requester) {
 			if (Songlist.Requests.Any(e => e.Requester.Equals(requester))) {
 				string output = $"@{requester} : | ";
-				IEnumerable<TwitchRequestedSong> songs = Songlist.Requests.TakeWhile(e => e.Requester.Equals(requester));
+				IEnumerable<TwitchRequestedSong> songs = Songlist.Requests.Where(e => e.Requester.Equals(requester));
 				for (int x = 0; x < songs.Count(); x++) {
 					if (string.IsNullOrEmpty(songs.ElementAt(x).SongData.Title)) {
 						output += $"{x + 1} : {songs.ElementAt(x).SongData.Link} | ";
