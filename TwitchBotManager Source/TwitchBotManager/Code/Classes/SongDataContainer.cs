@@ -13,9 +13,7 @@ using YoutubeDLSharp.Metadata;
 
 namespace ScoredBot.Code.Classes {
 
-#pragma warning disable CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
 	public class SongDataContainer {
-#pragma warning restore CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
 
 		/// <summary>
 		/// Youtube Link
@@ -364,11 +362,10 @@ namespace ScoredBot.Code.Classes {
 					, overrideOptions: new YoutubeDLSharp.Options.OptionSet() {
 						DumpJson = true,
 						DumpSingleJson = true,
-						HlsPreferNative = true,
 						IgnoreConfig = true,
 						NoPlaylist = true,
 						SkipDownload = true,
-						GetThumbnail = false,
+						NoWriteThumbnail = true,
 						ListThumbnails = false,
 						WriteAllThumbnails = false,
 						WriteThumbnail = false
@@ -546,6 +543,28 @@ namespace ScoredBot.Code.Classes {
 					}
 				} while (!pass && ++attempts < 100);
 			}
+		}
+
+		public override bool Equals(object obj) => obj is SongDataContainer container && Link == container.Link && OriginalRequester == container.OriginalRequester && Title == container.Title && LengthSec == container.LengthSec && FullDirLocation == container.FullDirLocation && LastValidPing == container.LastValidPing && LastPingFailed == container.LastPingFailed && AllowCaching == container.AllowCaching && LocalFile == container.LocalFile && UniqueSystemID == container.UniqueSystemID && LengthInTime.Equals(container.LengthInTime) && EqualityComparer<Task<RunResult<VideoData>>>.Default.Equals(InformationAquireTask, container.InformationAquireTask) && EqualityComparer<Task<RunResult<string>>>.Default.Equals(VideoAquireTask, container.VideoAquireTask) && DownloadWorking == container.DownloadWorking && ErrorMessage == container.ErrorMessage;
+
+		public override int GetHashCode() {
+			int hashCode = -675127944;
+			hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Link);
+			hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(OriginalRequester);
+			hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Title);
+			hashCode = hashCode * -1521134295 + LengthSec.GetHashCode();
+			hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(FullDirLocation);
+			hashCode = hashCode * -1521134295 + LastValidPing.GetHashCode();
+			hashCode = hashCode * -1521134295 + LastPingFailed.GetHashCode();
+			hashCode = hashCode * -1521134295 + AllowCaching.GetHashCode();
+			hashCode = hashCode * -1521134295 + LocalFile.GetHashCode();
+			hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(UniqueSystemID);
+			hashCode = hashCode * -1521134295 + LengthInTime.GetHashCode();
+			hashCode = hashCode * -1521134295 + EqualityComparer<Task<RunResult<VideoData>>>.Default.GetHashCode(InformationAquireTask);
+			hashCode = hashCode * -1521134295 + EqualityComparer<Task<RunResult<string>>>.Default.GetHashCode(VideoAquireTask);
+			hashCode = hashCode * -1521134295 + DownloadWorking.GetHashCode();
+			hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(ErrorMessage);
+			return hashCode;
 		}
 	}
 }

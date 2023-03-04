@@ -57,13 +57,15 @@ namespace ScoredBot {
 		private bool AppWorking;
 
 		private TwitchBot twitchBot;
-		private TwitchAPIInterfaceObject twitchAPI;
+		//private TwitchAPIInterfaceObject twitchAPI;
 
 		private SongRequestManager songRequestManager;
 
 		private List<NameValueCollection> RequestedSongs;
 		private List<NameValueCollection> SecondarySongs;
 		private List<NameValueCollection> BrokenSongs;
+
+		private List<TwitchMessageTranslation> twitchMessages;
 
 		private static List<string> StaticDebugOutQueue = new List<string>();
 		public static void StaticPostToDebug(string message) {
@@ -115,8 +117,8 @@ namespace ScoredBot {
 
 			CacheSongsRadioBut.Checked = ProgramSettings.AppSettings.CacheNewSongs;
 
-			twitchAPI = new TwitchAPIInterfaceObject(ProgramSettings.AppSettings.OAuth,
-				ProgramSettings.AppSettings.Secret); // Need more info to set this up
+			//twitchAPI = new TwitchAPIInterfaceObject(ProgramSettings.AppSettings.OAuth,
+			//	ProgramSettings.AppSettings.Secret); // Need more info to set this up
 
 			Show();
 
@@ -142,7 +144,7 @@ namespace ScoredBot {
 				soundPlayer.Dispose();
 			}
 
-			twitchAPI.InitialiseAccess();
+			//twitchAPI.InitialiseAccess();
 		}
 
 		#region ##### Main Form Functions and Events	#####
@@ -247,8 +249,8 @@ namespace ScoredBot {
 					CacheSongButton.Enabled = true;
 					SkipSongButton.Enabled = StopPlaybackButton.Enabled = false;
 				} else {
-					PlayPauseButton.Enabled = 
-					SkipSongButton.Enabled = 
+					PlayPauseButton.Enabled =
+					SkipSongButton.Enabled =
 					StopPlaybackButton.Enabled =
 					ClearALLCacheButton.Enabled =
 					CacheALLSongsButton.Enabled =
@@ -355,17 +357,18 @@ namespace ScoredBot {
 			CancellationTokenSource cancellationToken = new CancellationTokenSource(60000);
 			Thread thread = new Thread(async () => {
 				AppWorking = true;
-				do {
-					twitchBot.ReconnectToChat();
-					StaticPostToDebug("Attempting to reconnect bot.");
-					await Task.Delay(1000);
-				} while (!twitchBot.IsConnected && !cancellationToken.IsCancellationRequested);
+				try {
+					do {
+						await Task.Delay(1000);
+						twitchBot.ReconnectToChat();
+						StaticPostToDebug("Attempting to reconnect bot.");
+					} while (!twitchBot.IsConnected && !cancellationToken.IsCancellationRequested);
 
-				if (cancellationToken.IsCancellationRequested && !twitchBot.IsConnected) {
-					StaticPostToDebug("Bot reconnection failed.");
-					MessageBox.Show("The bot failed to reconnect to Twitch.", "Connection Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-				}
-
+					if (cancellationToken.IsCancellationRequested && !twitchBot.IsConnected) {
+						StaticPostToDebug("Bot reconnection failed.");
+						MessageBox.Show("The bot failed to reconnect to Twitch.", "Connection Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					}
+				} catch { }
 				AppWorking = false;
 			});
 			thread.Start();
@@ -547,8 +550,9 @@ namespace ScoredBot {
 			}
 		}
 
-		private void TwitchBot_OnMessageReceived(object sender, string e) {
+		private void TwitchBot_OnMessageReceived(object sender, TwitchMessageTranslation e) {
 			File.AppendAllText(Directory.GetCurrentDirectory() + @"\Outputs\CurrentChatLog.txt", e + Environment.NewLine);
+			twitchMessages.Add(e);
 		}
 
 		private void TwitchBot_OnMODRemoveSong(object sender, BotCommandContainer e) {

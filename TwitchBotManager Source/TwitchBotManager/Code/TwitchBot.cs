@@ -65,7 +65,7 @@ namespace ScoredBot.Code {
 
 		};
 
-		public event EventHandler<string> OnMessageReceived;
+		public event EventHandler<TwitchMessageTranslation> OnMessageReceived;
 
 		public event EventHandler<BotCommandContainer> OnCurrentSong;
 		public event EventHandler<BotCommandContainer> OnAddSong;
@@ -95,51 +95,51 @@ namespace ScoredBot.Code {
 				}},
 				{"remove", (e, f) => {
 					if (f != null) {
-						OnRemoveSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.RemoveSong, e.ChatMessage.Username, f)); // Remove index
+						OnRemoveSong?.Invoke(null, new BotCommandContainer(SongRequestCommandType.RemoveSong, e.ChatMessage.Username, f)); // Remove index
 					} else {
-						OnRemoveSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.RemoveSong, e.ChatMessage.Username, null)); // Remove first
+						OnRemoveSong?.Invoke(null, new BotCommandContainer(SongRequestCommandType.RemoveSong, e.ChatMessage.Username, null)); // Remove first
 					}
 				}},
 				{"removeall", (e, f) => {
-					OnRemoveAllSongs.Invoke(null, new BotCommandContainer(SongRequestCommandType.RemoveAllSongs, e.ChatMessage.Username, null)); // Remove all
+					OnRemoveAllSongs?.Invoke(null, new BotCommandContainer(SongRequestCommandType.RemoveAllSongs, e.ChatMessage.Username, null)); // Remove all
 				}},
 				{"showlist", (e, f) => {
-					OnPrintSongList.Invoke(null, new BotCommandContainer(SongRequestCommandType.PrintSongList, e.ChatMessage.Username, null));
+					OnPrintSongList?.Invoke(null, new BotCommandContainer(SongRequestCommandType.PrintSongList, e.ChatMessage.Username, null));
 				}},
 				{"showmylist", (e, f) => {
-					OnPrintUserSongRequests.Invoke(null, new BotCommandContainer(SongRequestCommandType.PrintUserSongRequest, e.ChatMessage.Username, null));
+					OnPrintUserSongRequests?.Invoke(null, new BotCommandContainer(SongRequestCommandType.PrintUserSongRequest, e.ChatMessage.Username, null));
 				}},
 				{"skip", (e, f) => {
 					if (e.ChatMessage.IsModerator || e.ChatMessage.IsMe || e.ChatMessage.IsBroadcaster) {
-						OnSkipSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.SkipSong, e.ChatMessage.Username, null));
+						OnSkipSong?.Invoke(null, new BotCommandContainer(SongRequestCommandType.SkipSong, e.ChatMessage.Username, null));
 					} else {
 						client.SendMessage(TwitchUsername, e.ChatMessage.Username + " : You do not have permission to use this command.");
 					}
 				}},
 				{"pause", (e, f) => {
 					if (e.ChatMessage.IsModerator || e.ChatMessage.IsMe || e.ChatMessage.IsBroadcaster) {
-						OnPauseSongRequests.Invoke(null, new BotCommandContainer(SongRequestCommandType.PauseSongRequests, e.ChatMessage.Username, null));
+						OnPauseSongRequests?.Invoke(null, new BotCommandContainer(SongRequestCommandType.PauseSongRequests, e.ChatMessage.Username, null));
 					} else {
 						client.SendMessage(TwitchUsername, e.ChatMessage.Username + " : You do not have permission to use this command.");
 					}
 				}},
 				{"play", (e, f) => {
 					if (e.ChatMessage.IsModerator || e.ChatMessage.IsMe || e.ChatMessage.IsBroadcaster) {
-						OnPlaySongRequests.Invoke(null, new BotCommandContainer(SongRequestCommandType.PlaySongRequests, e.ChatMessage.Username, null));
+						OnPlaySongRequests?.Invoke(null, new BotCommandContainer(SongRequestCommandType.PlaySongRequests, e.ChatMessage.Username, null));
 					} else {
 						client.SendMessage(TwitchUsername, e.ChatMessage.Username + " : You do not have permission to use this command.");
 					}
 				}},
 				{"clear", (e, f) => {
 					if (e.ChatMessage.IsModerator || e.ChatMessage.IsMe || e.ChatMessage.IsBroadcaster) {
-						OnClearSongRequests.Invoke(null, new BotCommandContainer(SongRequestCommandType.ClearSongRequests, e.ChatMessage.Username, null));
+						OnClearSongRequests?.Invoke(null, new BotCommandContainer(SongRequestCommandType.ClearSongRequests, e.ChatMessage.Username, null));
 					} else {
 						client.SendMessage(TwitchUsername, e.ChatMessage.Username + " : You do not have permission to use this command.");
 					}
 				}},
 				{"modremovesong", (e, f) => {
 					if ((e.ChatMessage.IsModerator || e.ChatMessage.IsMe || e.ChatMessage.IsBroadcaster) && f != null) {
-						OnMODRemoveSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.ClearSongRequests, e.ChatMessage.Username, f)); // Remove index
+						OnMODRemoveSong?.Invoke(null, new BotCommandContainer(SongRequestCommandType.ClearSongRequests, e.ChatMessage.Username, f)); // Remove index
 					} else {
 						client.SendMessage(TwitchUsername, e.ChatMessage.Username + " : You do not have permission to use this command.");
 					}
@@ -207,7 +207,6 @@ namespace ScoredBot.Code {
 				client.OnError += Client_OnError;
 				client.OnIncorrectLogin += Client_OnIncorrectLogin;
 
-				client.OnBeingHosted += Client_OnBeingHosted;
 				client.OnRaidNotification += Client_OnRaidNotification;
 
 				client.AutoReListenOnException = true;
@@ -259,16 +258,9 @@ namespace ScoredBot.Code {
 		}
 
 		private void Client_OnMessageReceived(object sender, OnMessageReceivedArgs e) {
-			string messagelog = DateTime.Now.ToString("MM/dd/yy - H:mm:ss zzz") + " || " +
-				(e.ChatMessage.Username.Equals(TwitchUsername) ? "#ME > " : "") +
-				e.ChatMessage.Username +
-				" => ¬[ " + e.ChatMessage.Message + " ]¬" +
-				(e.ChatMessage.IsStaff ? " | STAFF" : "") +
-				(e.ChatMessage.IsModerator ? " | MOD" : "") +
-				(e.ChatMessage.IsSubscriber ? " | SUB " + e.ChatMessage.SubscribedMonthCount : "") +
-				(e.ChatMessage.IsVip ? " | VIP" : "");
+			TwitchMessageTranslation twitchMessage = new TwitchMessageTranslation(e.ChatMessage);
 
-			OnMessageReceived.Invoke(null, messagelog);
+			OnMessageReceived?.Invoke(null, twitchMessage);
 
 			List<string> MessageText = e.ChatMessage.Message.Split(' ').ToList();
 			MessageText.RemoveAll(x => string.IsNullOrEmpty(x));
@@ -297,7 +289,7 @@ namespace ScoredBot.Code {
 
 		public void ReceiveSongRequest(string user, string commandlink) {
 			if (GlobalFunctions.GetYouTubeVideoID(commandlink, out string ID)) {
-				OnAddSong.Invoke(null, new BotCommandContainer(SongRequestCommandType.AddSong, user, new List<string>() { commandlink }));
+				OnAddSong?.Invoke(null, new BotCommandContainer(SongRequestCommandType.AddSong, user, new List<string>() { commandlink }));
 			} else {
 				client.SendMessage(TwitchUsername, user + " Your link wasn't recognised, please use links from YouTube.com to add song requests.");
 			}
@@ -345,16 +337,17 @@ namespace ScoredBot.Code {
 
 		private void Client_OnError(object sender, OnErrorEventArgs e) {
 			// TODO : Message MainForm there was an error
-			OnConnectionError.Invoke(sender, e);
+			OnConnectionError?.Invoke(sender, e);
 			MainForm.StaticPostToDebug($"Twitch Bot Client Error Occured: {e.Exception}");
 		}
 
 		private void Client_OnDisconnected(object sender, OnDisconnectedEventArgs e) {
+			IsActive = false;
 			MainForm.StaticPostToDebug("Twitch Bot Disconnected");
 		}
 
 		private void Client_OnConnectionError(object sender, OnConnectionErrorArgs e) {
-			OnConnectionError.Invoke(sender, e);
+			OnConnectionError?.Invoke(sender, e);
 			MainForm.StaticPostToDebug($"Twitch Bot Client Error Occured: {e.Error}");
 		}
 
@@ -366,13 +359,9 @@ namespace ScoredBot.Code {
 			// TODO : Message chat with a thank you and link to there Twitch
 		}
 
-		private void Client_OnBeingHosted(object sender, OnBeingHostedArgs e) {
-			// TODO : Message chat with a thank you and link to there Twitch
-		}
-
 		public void SendMessageToTwitchChat(string message) {
 			client.SendMessage(TwitchUsername, message);
-			OnMessageReceived.Invoke(this, DateTime.Now.ToString("MM/dd/yy - H:mm:ss zzz") + " || " + "#ME > " + TwitchUsername + " => ¬[ " + message + " ]¬");
+			//OnMessageReceived?.Invoke(this, DateTime.Now.ToString("MM/dd/yy - H:mm:ss zzz") + " || " + "#ME > " + TwitchUsername + " => ¬[ " + message + " ]¬");
 		}
 
 		private void PrintChatToLog() {
