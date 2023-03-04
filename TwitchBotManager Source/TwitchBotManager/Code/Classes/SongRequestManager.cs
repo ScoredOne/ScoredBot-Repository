@@ -549,19 +549,20 @@ namespace ScoredBot.Code.Classes {
 
 				MainForm.StaticPostToDebug("Song Failed to play, recovering and moving on to the next song.");
 				MainForm.StaticPostToDebug(exc.Message);
+				if (CurrentSong != null) {
+					if (CurrentSong.SongData.LocalFile && !CurrentSong.SongData.AudioCached()) {
+						CurrentSong.SongData.LastPingFailed = true;
 
-				if (CurrentSong.SongData.LocalFile && !CurrentSong.SongData.AudioCached()) {
-					CurrentSong.SongData.LastPingFailed = true;
+						SecondarySongPlaylist.Remove(CurrentSong.SongData);
 
-					SecondarySongPlaylist.Remove(CurrentSong.SongData);
+						if (!BrokenLinklist.Contains(CurrentSong.SongData)) {
+							BrokenLinklist.Add(CurrentSong.SongData);
+						}
 
-					if (!BrokenLinklist.Contains(CurrentSong.SongData)) {
-						BrokenLinklist.Add(CurrentSong.SongData);
+						MainForm.StaticPostToDebug("Secondary Playlist Song Data Failed... " + CurrentSong.SongData.DirLocation);
+					} else if (!IsSecondary && Songlist.Requests.Count > 0) {
+						Songlist.RemoveFirst();
 					}
-
-					MainForm.StaticPostToDebug("Secondary Playlist Song Data Failed... " + CurrentSong.SongData.DirLocation);
-				} else if (!IsSecondary && Songlist.Requests.Count > 0) {
-					Songlist.RemoveFirst();
 				}
 				PlayMedia();
 			}
