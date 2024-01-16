@@ -1,5 +1,7 @@
 ### ScoredBot Repository
  ScoredBot Twitch bot. Created by ScoredOne.
+
+### Development has ended, focus is now on TwitchUnite, a attempt to remake this into Unity is a future plan
  
  #### About
  - Currently version 0.2.6
