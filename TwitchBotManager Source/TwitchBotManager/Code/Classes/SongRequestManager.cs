@@ -40,8 +40,6 @@ namespace ScoredBot.Code.Classes {
 
 		private LibVLC _libVLC;
 
-		private string VLCAudioDevice;
-
 		private MediaPlayer VLCPlayer;
 
 		private Media media;
@@ -322,8 +320,6 @@ namespace ScoredBot.Code.Classes {
 				EnableHardwareDecoding = true
 			};
 
-			SetVLCAudioOutput(VLCAudioDevice);
-
 			VLCPlayer.EndReached += Media_EndReached;
 			UpdatePlayerVolume();
 			VLCPlayer.Buffering += VLCPlayer_Buffering;
@@ -345,21 +341,6 @@ namespace ScoredBot.Code.Classes {
 			} else {
 				return VLCPlayer.AudioOutputDeviceEnum.Select(e => e.DeviceIdentifier);
 			}
-		}
-
-		private bool SetVLCAudioOutput(string device) {
-			if (VLCPlayer.AudioOutputDeviceEnum.Any(e => e.DeviceIdentifier.Equals(device))) {
-				VLCPlayer.SetAudioOutput(VLCAudioDevice = device);
-				MainForm.StaticPostToDebug($"SetVLCAudioOutput : VLC audio set to '{device}'.");
-				return true;
-			} else {
-				MainForm.StaticPostToDebug($"SetVLCAudioOutput : Unable to find device '{device}', VLC audio unchanged.");
-				return false;
-			}
-		}
-
-		public void SetPlayerAudioOutput() {
-
 		}
 
 		private void VLCPlayer_Paused(object sender, EventArgs e) {
@@ -701,7 +682,7 @@ namespace ScoredBot.Code.Classes {
 			} else {
 				await song.GetYouTubeVideoInformation(YoutubeDLWorker);
 
-				if (!song.PingValid && song.AudioCached()) {
+				if (song.AudioCached()) {
 					BrokenLinklist.Remove(song);
 
 					if (!SecondarySongPlaylist.ContainsKey(song)) {

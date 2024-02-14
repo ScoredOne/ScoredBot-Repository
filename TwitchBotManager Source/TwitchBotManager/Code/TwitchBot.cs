@@ -200,7 +200,6 @@ namespace ScoredBot.Code {
 				client.OnReSubscriber += Client_OnReSubscriber;
 
 				client.OnConnected += Client_OnConnected;
-				client.OnReconnected += Client_OnReconnected;
 				client.OnChatCleared += Client_OnChatCleared;
 				client.OnConnectionError += Client_OnConnectionError;
 				client.OnDisconnected += Client_OnDisconnected;
@@ -246,10 +245,6 @@ namespace ScoredBot.Code {
 		private void Client_OnConnected(object sender, OnConnectedArgs e) {
 			IsActive = true;
 			Console.WriteLine($"Connected to {e.AutoJoinChannel}");
-		}
-
-		private void Client_OnReconnected(object sender, OnReconnectedEventArgs e) {
-			IsActive = true;
 		}
 
 		private void Client_OnJoinedChannel(object sender, OnJoinedChannelArgs e) {

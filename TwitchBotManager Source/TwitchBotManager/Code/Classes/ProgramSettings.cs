@@ -19,7 +19,7 @@ namespace ScoredBot.Settings {
 		public string UserName {
 			get => _username;
 			set {
-				if (!_username.Equals(value)) {
+				if (_username != value) {
 					_username = value;
 					OnDataWriten.Invoke();
 				}
@@ -30,7 +30,7 @@ namespace ScoredBot.Settings {
 		public string OAuth {
 			get => _oauth;
 			set {
-				if (!_oauth.Equals(value)) {
+				if (_oauth != value) {
 					_oauth = value;
 					OnDataWriten.Invoke();
 				}
@@ -41,7 +41,7 @@ namespace ScoredBot.Settings {
 		public string Secret {
 			get => _secret;
 			set {
-				if (!_secret.Equals(value)) {
+				if (_secret != value) {
 					_secret = value;
 					OnDataWriten.Invoke();
 				}
@@ -52,7 +52,7 @@ namespace ScoredBot.Settings {
 		public string Target {
 			get => _target;
 			set {
-				if (!_target.Equals(value)) {
+				if (_target != value) {
 					_target = value;
 					OnDataWriten.Invoke();
 				}

@@ -183,6 +183,7 @@ namespace ScoredBot {
 					songRequestManager.TakingSongRequests = false;
 				}
 
+				AddLinkButton.Enabled =
 				RequestsButton.Enabled = twitchBot.IsActive;
 
 				outputProcessingMessageToolStripMenuItem.Enabled = true;
@@ -195,6 +196,7 @@ namespace ScoredBot {
 
 				BotStartStop.Text = "Start Bot";
 
+				AddLinkButton.Enabled =
 				RequestsButton.Enabled = false;
 				songRequestManager.TakingSongRequests = false;
 
@@ -206,7 +208,6 @@ namespace ScoredBot {
 				PlayPauseButton.Text = songRequestManager.IsPlaying ? "Pause" : "Play";
 
 				if (songRequestManager.PlaylistLoadError) {
-					AddLinkButton.Enabled =
 					SaveLinkButton.Enabled =
 					RequestsButton.Enabled =
 					RemoveSongFromSecondaryButton.Enabled =
@@ -221,9 +222,7 @@ namespace ScoredBot {
 					ClaimAllSongsButton.Enabled =
 					ClaimSongButton.Enabled =
 					CacheSongButton.Enabled = false;
-				} else {
-					AddLinkButton.Enabled = true;
-				}
+				} 
 
 				CurrentSongDefaultLabel.ThreadSafeAction(e => e.Text = songRequestManager.GetCurrentSong());
 				CurrentSongRequestLabel.ThreadSafeAction(e => e.Text = songRequestManager.SongOutputText.OutputString);
@@ -665,11 +664,12 @@ namespace ScoredBot {
 			PostToDebug.Invoke("Song Requests list cleared");
 		}
 
-		private async void AddLinkButton_Click(object sender, EventArgs e) {
+		private void AddLinkButton_Click(object sender, EventArgs e) {
 			// Currently just adds a song to the song list, need a button or change this to do one for host queue
-			if (twitchBot != null && twitchBot.IsActive && songRequestManager != null) {
-				await songRequestManager.SubmitSongRequest(ProgramSettings.AppSettings.UserName, AddSongToPlayTextBox.Text, true);
+			if (twitchBot != null && twitchBot.IsActive && songRequestManager != null && GlobalFunctions.GetYouTubeVideoID(AddSongToPlayTextBox.Text, out _)) {
+				Task.Run(() => songRequestManager.SubmitSongRequest(AddSongToPlayTextBox.Text, ProgramSettings.AppSettings.UserName, true));
 				PostToDebug.Invoke(AddSongToPlayTextBox.Text + " Link added to current requests");
+				AddSongToPlayTextBox.Text = "";
 			}
 		}
 

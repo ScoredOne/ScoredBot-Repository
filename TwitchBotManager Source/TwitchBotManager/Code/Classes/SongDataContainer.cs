@@ -421,7 +421,7 @@ namespace ScoredBot.Code.Classes {
 			return;
 		}
 
-		public async Task GetYouTubeAudioData(YoutubeDL YoutubeDLWorker, YoutubeDLSharp.Options.AudioConversionFormat type = YoutubeDLSharp.Options.AudioConversionFormat.Mp3, bool Force = false) {
+		public async Task GetYouTubeAudioData(YoutubeDL YoutubeDLWorker, YoutubeDLSharp.Options.AudioConversionFormat type = YoutubeDLSharp.Options.AudioConversionFormat.Mp3) {
 			if (YoutubeDLWorker == null) {
 				throw new NullReferenceException("GetYouTubeAudioData: YoutubeDLWorker was provided null");
 			}
@@ -444,11 +444,9 @@ namespace ScoredBot.Code.Classes {
 				}
 			}
 
-			if (!Force && AudioCached()) {
+			if (AudioCached()) {
 				MainForm.StaticPostToDebug($"GetYouTubeAudioData: {(string.IsNullOrEmpty(Title) ? Link : Title)} Audio found, download canceled.");
 				return;
-			} else if (Force) {
-				MainForm.StaticPostToDebug($"GetYouTubeVideoInformation: Forced download of {(string.IsNullOrEmpty(Title) ? Link : Title)} Audio");
 			}
 			DownloadWorking = true;
 
