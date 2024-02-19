@@ -65,7 +65,7 @@ namespace ScoredBot {
 		private List<NameValueCollection> SecondarySongs;
 		private List<NameValueCollection> BrokenSongs;
 
-		private List<TwitchMessageTranslation> twitchMessages;
+		private List<TwitchMessageTranslation> twitchMessages = new List<TwitchMessageTranslation>();
 
 		private static List<string> StaticDebugOutQueue = new List<string>();
 		public static void StaticPostToDebug(string message) {
